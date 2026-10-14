@@ -1,0 +1,17 @@
+{
+  "short_name": "Taller ERP",
+  "name": "Sistema ERP Taller Mecánico",
+  "icons": [
+    {
+      "src": "/assets/logo-patagonia-BKBaS7ZV.png",
+      "type": "image/png",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#0d6efd",
+  "display": "standalone",
+  "orientation": "any"
+}

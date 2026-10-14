@@ -1,0 +1,69 @@
+/* Frontend/src/index.css */
+body {
+  background-color: #f8f9fa; 
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.935rem;
+  color: #212529;
+}
+
+/* Contenedor principal para PC y Monitores Anchos (Evita que el contenido se estire excesivamente) */
+.app-main-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Ajuste general de espaciado */
+.container, .container-fluid {
+  padding-bottom: 2rem;
+}
+
+/* Estilos de tablas generales */
+.table {
+  font-size: 0.9rem;
+}
+
+/* Optimización Responsive para Celulares y Tablets */
+@media (max-width: 768px) {
+  h2 {
+    font-size: 1.35rem;
+  }
+
+  /* Entradas de texto táctiles en celular */
+  .form-control, .form-select {
+    font-size: 0.95rem;
+    padding: 0.55rem 0.75rem;
+    min-height: 42px;
+  }
+
+  /* Botones cómodos para presionar con el pulgar */
+  .btn {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.9rem;
+    min-height: 40px;
+  }
+
+  .btn-sm {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.825rem;
+    min-height: 34px;
+  }
+
+  .table-responsive {
+    font-size: 0.875rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+
+  .modal-body {
+    padding: 1.1rem !important;
+  }
+
+  .card-body {
+    padding: 1.15rem !important;
+  }
+}
