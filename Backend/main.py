@@ -1,10 +1,10 @@
 # backend/main.py
 import os
 import sys
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from database import engine, Base, ejecutar_migraciones_sqlite
 from utils.backups import ejecutar_backup_diario
 from seed import sembrar_datos_completos
@@ -47,6 +47,19 @@ app = FastAPI(
     description="Sistema ERP/CRM para gestión local de clientes, vehículos, stock y órdenes de trabajo.",
     version="1.0.0"
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin", "https://taller-erp.netlify.app")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Error interno en el servidor: {str(exc)}"},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "*"
+        }
+    )
 
 # ==========================================
 # 3. CONFIGURACIÓN DE CORS MULTI-TENANT (COMPATIBLE CON W3C & NETLIFY)

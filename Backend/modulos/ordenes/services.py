@@ -16,7 +16,8 @@ def get_ordenes(db: Session, skip: int = 0, limit: int = 100, vehiculo_id: Optio
     return query.offset(skip).limit(limit).all()
 
 def create_orden(db: Session, orden: schemas.OrdenCreate):
-    total_calculado = orden.costo_mano_obra
+    costo_mo = orden.costo_mano_obra if orden.costo_mano_obra is not None else 0.0
+    total_calculado = costo_mo
     
     vehiculo_actual = db.query(Vehiculo).filter(Vehiculo.id == orden.vehiculo_id).first()
     cliente_congelado_id = vehiculo_actual.cliente_id if vehiculo_actual else None
@@ -27,13 +28,13 @@ def create_orden(db: Session, orden: schemas.OrdenCreate):
         mecanico_id=orden.mecanico_id,
         descripcion_falla=orden.descripcion_falla,
         estado=orden.estado,
-        costo_mano_obra=orden.costo_mano_obra,
+        costo_mano_obra=costo_mo,
         kilometros=orden.kilometros,
         nivel_combustible=orden.nivel_combustible,
         frente_stereo=orden.frente_stereo,
         rueda_auxilio=orden.rueda_auxilio,
         codigo_stereo=orden.codigo_stereo,
-        total=0  
+        total=costo_mo
     )
     
     db.add(db_orden)
