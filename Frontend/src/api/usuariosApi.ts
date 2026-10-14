@@ -2,8 +2,12 @@ import { api } from './axios';
 import { Usuario, UsuarioCreate } from '../types';
 
 export const getUsuarios = async (): Promise<Usuario[]> => {
-    const response = await api.get('/usuarios/');
-    return response.data;
+    try {
+        const response = await api.get('/usuarios/');
+        return Array.isArray(response.data) ? response.data : [];
+    } catch {
+        return [];
+    }
 };
 
 export const createUsuario = async (usuario: UsuarioCreate): Promise<Usuario> => {

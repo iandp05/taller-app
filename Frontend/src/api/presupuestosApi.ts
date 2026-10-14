@@ -3,8 +3,12 @@ import { api } from './axios';
 import { Presupuesto, PresupuestoCreate } from '../types';
 
 export const getPresupuestos = async (): Promise<Presupuesto[]> => {
-    const response = await api.get<Presupuesto[]>('/presupuestos/');
-    return response.data;
+    try {
+        const response = await api.get<Presupuesto[]>('/presupuestos/');
+        return Array.isArray(response.data) ? response.data : [];
+    } catch {
+        return [];
+    }
 };
 
 export const getPresupuestoById = async (id: number): Promise<Presupuesto> => {

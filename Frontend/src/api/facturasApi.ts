@@ -3,8 +3,12 @@ import { api } from './axios';
 import { Factura, FacturaCreate } from '../types';
 
 export const getFacturas = async (): Promise<Factura[]> => {
-    const response = await api.get<Factura[]>('/facturas/');
-    return response.data;
+    try {
+        const response = await api.get<Factura[]>('/facturas/');
+        return Array.isArray(response.data) ? response.data : [];
+    } catch {
+        return [];
+    }
 };
 
 export const getFacturaById = async (id: number): Promise<Factura> => {
