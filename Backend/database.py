@@ -2,8 +2,31 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import sqlite3
 import os
+import sys
+from dotenv import load_dotenv
 from fastapi import Request
 from utils.paths import APP_PATHS
+import utils.turso_driver
+
+# Cargar variables de entorno desde .env con resolución multi-ruta
+def cargar_env_multi_ruta():
+    candidates = []
+    if getattr(sys, 'frozen', False):
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.append(os.path.join(exe_dir, ".env"))
+        meipass_dir = getattr(sys, '_MEIPASS', None)
+        if meipass_dir:
+            candidates.append(os.path.join(meipass_dir, ".env"))
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates.append(os.path.join(base_dir, ".env"))
+    candidates.append(os.path.join(os.getcwd(), ".env"))
+
+    for path in candidates:
+        if os.path.exists(path):
+            load_dotenv(path, override=True)
+            break
+
+cargar_env_multi_ruta()
 
 # Conexión por defecto local dentro de 'BaseDeDatos/taller.db'
 LOCAL_DATABASE_URL = f"sqlite:///{APP_PATHS['db_path']}"
@@ -23,8 +46,8 @@ def get_db_session_for_taller(taller_slug: str = "default"):
     """
     Sistemas de Conexión Multi-Tenant Dinámico:
     - En modo nube (Turso DB): Si se definen 'TURSO_DATABASE_URL' y 'TURSO_AUTH_TOKEN', conecta
-      a la BDD remota de Turso 'taller_{taller_slug}'.
-    - En modo local escritorio: Conecta a la BDD SQLite organizada local 'BaseDeDatos/taller.db'.
+      a la BDD remota de Turso en la nube vía driver HTTP Pipeline.
+    - En modo local escritorio / offline: Conecta a la BDD SQLite protegida del Escritorio 'BaseDeDatos/taller.db'.
     """
     turso_base_url = os.environ.get("TURSO_DATABASE_URL")
     turso_auth_token = os.environ.get("TURSO_AUTH_TOKEN")
@@ -34,10 +57,15 @@ def get_db_session_for_taller(taller_slug: str = "default"):
         cache_key = f"turso_{slug_limpio}"
 
         if cache_key not in engines_cache:
-            # Formato URL de Turso DB usando driver libsql
-            turso_url = f"{turso_base_url}?authToken={turso_auth_token}"
-            engine_turso = create_engine(turso_url, connect_args={"check_same_thread": False})
-            engines_cache[cache_key] = sessionmaker(autocommit=False, autoflush=False, bind=engine_turso)
+            try:
+                engine_turso = create_engine(
+                    "sqlite://",
+                    creator=lambda: utils.turso_driver.connect(turso_base_url, turso_auth_token)
+                )
+                engines_cache[cache_key] = sessionmaker(autocommit=False, autoflush=False, bind=engine_turso)
+            except Exception as e:
+                print("Aviso de conexión a Turso, usando BDD local protegida:", e)
+                return SesionLocal()
 
         session_factory = engines_cache[cache_key]
         return session_factory()
