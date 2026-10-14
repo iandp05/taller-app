@@ -11,7 +11,6 @@ from seed import sembrar_datos_completos
 
 # ==========================================
 # 1. IMPORTAR MODELOS 
-# (Obligatorio para que SQLAlchemy lea las relaciones y cree las tablas)
 # ==========================================
 from modulos.usuarios import models as usuarios_models
 from modulos.clientes import models as clientes_models
@@ -23,7 +22,7 @@ from modulos.factura import models as facturas_models
 from modulos.configuracion import models as configuracion_models
 
 # ==========================================
-# 2. IMPORTAR ROUTERS (Las rutas / endpoints)
+# 2. IMPORTAR ROUTERS
 # ==========================================
 from modulos.usuarios import router as usuarios_router
 from modulos.clientes import router as clientes_router
@@ -50,14 +49,20 @@ app = FastAPI(
 )
 
 # ==========================================
-# 3. CONFIGURACIÓN DE CORS MULTI-TENANT
+# 3. CONFIGURACIÓN DE CORS MULTI-TENANT (COMPATIBLE CON W3C & NETLIFY)
 # ==========================================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://taller-erp.netlify.app",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000"
+    ],
+    allow_origin_regex=r"https://.*\.netlify\.app",
     allow_credentials=True,
-    allow_methods=["*"], 
-    allow_headers=["*", "X-Taller-Slug"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "X-Taller-Slug", "x-taller-slug", "Accept", "Origin"],
     expose_headers=["*"],
 )
 
