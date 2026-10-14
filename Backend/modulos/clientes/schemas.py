@@ -33,15 +33,17 @@ def validar_cuit_dni(val: Optional[str]) -> Optional[str]:
     else:
         raise ValueError("Debe ingresar un CUIT válido (11 dígitos) o un DNI (7 u 8 dígitos).")
 
-# 1. Esquema Base
+# 1. Esquema Base (Para respuestas sin ejecutar validaciones estrictas sobre BDD existente)
 class ClienteBase(BaseModel):
     nombre: str = Field(..., min_length=2, max_length=150, description="Nombre o Razón Social del cliente")
-    telefono: str = Field(..., min_length=6, max_length=30, description="Teléfono de contacto")
+    telefono: str = Field(..., min_length=1, max_length=30, description="Teléfono de contacto")
     email: Optional[str] = Field(None, max_length=100, description="Correo electrónico opcional")
     cuit: Optional[str] = Field(None, max_length=20, description="CUIT o DNI")
     domicilio: Optional[str] = Field(None, max_length=200, description="Domicilio comercial")
     condicion_iva: Optional[str] = Field("Consumidor Final", max_length=50)
 
+# 2. Esquema para CREAR (POST) - Aplica validaciones estrictas en la entrada
+class ClienteCreate(ClienteBase):
     @field_validator("email", mode="before")
     @classmethod
     def validar_email(cls, v):
@@ -59,14 +61,10 @@ class ClienteBase(BaseModel):
             raise ValueError("El teléfono no puede estar vacío.")
         return str(v).strip()
 
-# 2. Esquema para CREAR (POST)
-class ClienteCreate(ClienteBase):
-    pass
-
 # 3. Esquema para ACTUALIZAR (PUT/PATCH)
 class ClienteUpdate(BaseModel):
     nombre: Optional[str] = Field(None, min_length=2, max_length=150)
-    telefono: Optional[str] = Field(None, min_length=6, max_length=30)
+    telefono: Optional[str] = Field(None, min_length=1, max_length=30)
     email: Optional[str] = Field(None, max_length=100)
     cuit: Optional[str] = Field(None, max_length=20)
     domicilio: Optional[str] = Field(None, max_length=200)
