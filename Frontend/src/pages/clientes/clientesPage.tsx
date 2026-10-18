@@ -11,12 +11,10 @@ export default function ClientesPage() {
     const [showModal, setShowModal] = useState(false);
     const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
 
-    // Estados para controlar el modal flotante de confirmación
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [idClienteAEliminar, setIdClienteAEliminar] = useState<number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    // Estados de Búsqueda y Paginación
     const [busqueda, setBusqueda] = useState('');
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 5;
@@ -24,9 +22,10 @@ export default function ClientesPage() {
     const cargarClientes = async () => {
         try {
             const data = await getClientes();
-            setClientes(data);
+            setClientes(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error al obtener clientes:", error);
+            setClientes([]);
         }
     };
 
@@ -38,14 +37,15 @@ export default function ClientesPage() {
         setPaginaActual(1);
     }, [busqueda]);
 
-    // Filtrado
-    const clientesFiltrados = clientes.filter(c => 
-        c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+    // Filtrado blindado contra nulos
+    const listaClientes = Array.isArray(clientes) ? clientes : [];
+    const clientesFiltrados = listaClientes.filter(c =>
+        (c.nombre && c.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
         (c.telefono && c.telefono.toLowerCase().includes(busqueda.toLowerCase())) ||
         (c.email && c.email.toLowerCase().includes(busqueda.toLowerCase()))
     );
 
-    // Paginación
+    // Paginación blindada
     const indiceUltimoItem = paginaActual * itemsPorPagina;
     const indicePrimerItem = indiceUltimoItem - itemsPorPagina;
     const clientesPaginados = clientesFiltrados.slice(indicePrimerItem, indiceUltimoItem);
@@ -54,13 +54,11 @@ export default function ClientesPage() {
     const handleNuevoCliente = () => { setClienteSeleccionado(null); setShowModal(true); };
     const handleEditarCliente = (cliente: Cliente) => { setClienteSeleccionado(cliente); setShowModal(true); };
     
-    // Abre el modal corporativo en lugar del aviso nativo
     const handleEliminarClienteClick = (id: number) => {
         setIdClienteAEliminar(id);
         setShowConfirmModal(true);
     };
 
-    // Ejecuta la baja real una vez que el usuario confirma en el modal
     const handleConfirmarEliminacion = async () => {
         if (idClienteAEliminar === null) return;
         
@@ -153,7 +151,6 @@ export default function ClientesPage() {
 
             <ClienteModal show={showModal} handleClose={() => setShowModal(false)} onClientSaved={cargarClientes} clienteEditando={clienteSeleccionado} />
 
-            {/* Modal de confirmación estilizado con Bootstrap */}
             <ConfirmModal
                 show={showConfirmModal}
                 title="Confirmar Eliminación"

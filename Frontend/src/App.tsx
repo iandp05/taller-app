@@ -2,6 +2,9 @@
 import { useContext } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
+// Importamos el Escudo de Captura de Errores Global
+import ErrorBoundary from './components/ErrorBoundary';
+
 // Importamos el Contexto de Autenticación
 import { AuthProvider, AuthContext } from './context/AuthContext';
 
@@ -36,11 +39,11 @@ function AppContent() {
     const { user } = useContext(AuthContext);
 
     return (
-        <>
+        <ErrorBoundary>
             {/* Solo mostramos la barra superior si el usuario está logueado */}
             {user && <Navbar />}
             
-            {/* Quitamos los márgenes si estamos en la pantalla de login */}
+            {/* Contenedor adaptativo */}
             <div className={user ? "app-main-container px-2 px-sm-3 px-md-4 my-2 my-md-4" : ""}>
                 <Routes>
                     {/* RUTA PÚBLICA */}
@@ -58,16 +61,18 @@ function AppContent() {
                     <Route path="/configuracion" element={<ProtectedRoute><ConfiguracionPage /></ProtectedRoute>} />
                 </Routes>
             </div>
-        </>
+        </ErrorBoundary>
     );
 }
 
 // 3. Componente Principal: Envuelve toda la app con el escudo de seguridad
 function App() {
     return (
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
+        <ErrorBoundary>
+            <AuthProvider>
+                <AppContent />
+            </AuthProvider>
+        </ErrorBoundary>
     );
 }
 
