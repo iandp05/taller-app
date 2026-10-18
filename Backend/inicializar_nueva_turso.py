@@ -3,18 +3,24 @@ import sqlite3
 import os
 import json
 import urllib.request
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from database import Base, DEFAULT_TURSO_URL, DEFAULT_TURSO_TOKEN
+from database import Base, load_dotenv
 import utils.turso_driver
 from utils.paths import APP_PATHS
 
-turso_url = DEFAULT_TURSO_URL.replace("libsql://", "https://").rstrip("/") + "/v2/pipeline"
-turso_token = DEFAULT_TURSO_TOKEN
+load_dotenv()
+
+turso_db_url = os.environ.get("TURSO_DATABASE_URL")
+turso_auth_token = os.environ.get("TURSO_AUTH_TOKEN")
+
+turso_url = turso_db_url.replace("libsql://", "https://").rstrip("/") + "/v2/pipeline"
+turso_token = turso_auth_token
 
 print("1. Conectando a Turso DB para crear todas las tablas (DDL)...")
 engine_turso = create_engine(
     "sqlite://",
-    creator=lambda: utils.turso_driver.connect(DEFAULT_TURSO_URL, DEFAULT_TURSO_TOKEN)
+    creator=lambda: utils.turso_driver.connect(turso_db_url, turso_auth_token)
 )
 Base.metadata.create_all(bind=engine_turso)
 print("--- ¡Las 9 tablas han sido creadas con éxito en Turso Cloud DB! ---")

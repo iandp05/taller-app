@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from database import engine, Base, ejecutar_migraciones_sqlite
 from utils.backups import ejecutar_backup_diario
 from seed import sembrar_datos_completos
+from worker_sync import iniciar_worker_sync_background
 
 # ==========================================
 # 1. IMPORTAR MODELOS 
@@ -20,6 +21,7 @@ from modulos.ordenes import models as ordenes_models
 from modulos.presupuestos import models as presupuestos_models
 from modulos.factura import models as facturas_models  
 from modulos.configuracion import models as configuracion_models
+from modulos.sync import models as sync_models
 
 # ==========================================
 # 2. IMPORTAR ROUTERS
@@ -42,6 +44,12 @@ try:
 except Exception as err:
     print("Aviso al verificar datos de inicio:", err)
 
+# Iniciar worker de sincronización Local-First Outbox en segundo plano
+try:
+    iniciar_worker_sync_background(intervalo_segundos=7)
+except Exception as err_w:
+    print("Aviso al iniciar worker de sincronización:", err_w)
+
 app = FastAPI(
     title="API Taller Mecánico",
     description="Sistema ERP/CRM para gestión local de clientes, vehículos, stock y órdenes de trabajo.",
@@ -62,7 +70,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 # ==========================================
-# 3. CONFIGURACIÓN DE CORS MULTI-TENANT (COMPATIBLE CON W3C & NETLIFY)
+# 3. CONFIGURACIÓN DE CORS MULTI-TENANT
 # ==========================================
 app.add_middleware(
     CORSMiddleware,
