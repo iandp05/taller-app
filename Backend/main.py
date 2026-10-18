@@ -5,7 +5,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-from database import engine, Base, ejecutar_migraciones_sqlite
+from sqlalchemy.orm import sessionmaker
+from database import engine, Base, get_turso_engine, ejecutar_migraciones_sqlite
 from utils.backups import ejecutar_backup_diario
 from seed import sembrar_datos_completos
 from worker_sync import iniciar_worker_sync_background
@@ -36,13 +37,28 @@ from modulos.factura import router as factura_router
 from modulos.configuracion import router as configuracion_router
 from modulos.actualizaciones import router as actualizaciones_router
 
-Base.metadata.create_all(bind=engine)
-ejecutar_migraciones_sqlite()
-ejecutar_backup_diario()
+# ==========================================
+# AUTO-CREACIÓN DE ESTRUCTURA DDL Y SEMBRADO EN LOCAL Y TURSO CLOUD DB
+# ==========================================
 try:
+    Base.metadata.create_all(bind=engine)
+    ejecutar_migraciones_sqlite()
+    ejecutar_backup_diario()
     sembrar_datos_completos()
-except Exception as err:
-    print("Aviso al verificar datos de inicio:", err)
+except Exception as err_loc:
+    print("Aviso al inicializar BDD local:", err_loc)
+
+# Auto-crear esquema DDL y usuario 'luca' (1234) en Turso Cloud DB al arrancar el servidor
+try:
+    turso_engine = get_turso_engine()
+    if turso_engine:
+        Base.metadata.create_all(bind=turso_engine)
+        temp_session = sessionmaker(autocommit=False, autoflush=False, bind=turso_engine)()
+        sembrar_datos_completos(session=temp_session, bind_engine=turso_engine)
+        temp_session.close()
+        print("--- ¡Estructura DDL y Usuario inicial creados en Turso Cloud DB! ---")
+except Exception as err_tur:
+    print("Aviso al inicializar BDD en Turso Cloud DB:", err_tur)
 
 # Iniciar worker de sincronización Local-First Outbox en segundo plano
 try:
