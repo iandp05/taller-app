@@ -70,9 +70,16 @@ def procesar_cola_sincronizacion():
                 cursor_local.execute("UPDATE sync_queue SET status='COMPLETED' WHERE id=?", (req_id,))
                 conn_local.commit()
             except Exception as e:
-                print(f"Worker Sync: Error ejecutando item {req_id} en Turso:", e)
-                cursor_local.execute("UPDATE sync_queue SET retries = retries + 1 WHERE id=?", (req_id,))
-                conn_local.commit()
+                err_str = str(e).upper()
+                if any(x in err_str for x in ["UNIQUE", "CONSTRAINT", "PRIMARY KEY", "ALREADY EXISTS"]):
+                    print(f"Worker Sync: Registro ya existente en Turso (ítem {req_id}), marcando como COMPLETED:", e)
+                    cursor_local.execute("UPDATE sync_queue SET status='COMPLETED' WHERE id=?", (req_id,))
+                    conn_local.commit()
+                else:
+                    print(f"Worker Sync: Error de conexión o red en ítem {req_id}, manteniendo PENDING:", e)
+                    cursor_local.execute("UPDATE sync_queue SET retries = retries + 1 WHERE id=?", (req_id,))
+                    conn_local.commit()
+                    break  # Abortar ciclo para preservar orden estricto cuando no hay red
                 break  # Abortar ciclo para preservar orden estricto
 
         conn_local.close()

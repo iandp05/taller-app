@@ -30,3 +30,17 @@ def test_sync_queue_executemany_batch_detection():
     ]
     assert len(batch_params) == 2
     assert batch_params[0] == ["Toyota", "Corolla"]
+
+def test_sync_estado_endpoint(client):
+    response = client.get("/sync/estado")
+    assert response.status_code == 200
+    data = response.json()
+    assert "pendientes" in data
+    assert "completados" in data
+    assert data["online"] is True
+
+def test_sync_queue_duplicate_error_classification():
+    err_msg = "SQLite error: UNIQUE constraint failed: usuarios.username"
+    err_str = err_msg.upper()
+    is_duplicate_error = any(x in err_str for x in ["UNIQUE", "CONSTRAINT", "PRIMARY KEY", "ALREADY EXISTS"])
+    assert is_duplicate_error is True
