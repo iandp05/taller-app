@@ -1,5 +1,5 @@
 // Frontend/src/pages/presupuestos/PresupuestosPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Badge, Alert } from 'react-bootstrap';
 import { Presupuesto, Vehiculo, Cliente } from '../../types';
 import { getPresupuestos, deletePresupuesto } from '../../api/presupuestosApi';
@@ -8,6 +8,7 @@ import { getClientes } from '../../api/clientesApi';
 import PresupuestoModal from './PresupuestoModal';
 import PresupuestoPdfModal from './PresupuestoPDFModal';
 import ConfirmModal from '../../components/ConfirmModal';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 export default function PresupuestosPage() {
     const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
@@ -28,7 +29,7 @@ export default function PresupuestosPage() {
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 5;
 
-    const cargarDatos = async () => {
+    const cargarDatos = useCallback(async () => {
         try {
             const [presupuestosData, vehiculosData, clientesData] = await Promise.all([
                 getPresupuestos(),
@@ -41,13 +42,14 @@ export default function PresupuestosPage() {
             setClientes(Array.isArray(clientesData) ? clientesData : []);
         } catch (error) {
             console.error("Error al obtener los datos:", error);
-            setPresupuestos([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         cargarDatos();
-    }, []);
+    }, [cargarDatos]);
+
+    useAutoRefresh(cargarDatos, 5000);
 
     useEffect(() => {
         setPaginaActual(1);

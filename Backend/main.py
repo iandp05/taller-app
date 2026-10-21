@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import sessionmaker
-from database import engine, Base, get_turso_engine, ejecutar_migraciones_sqlite
+from database import engine, Base, get_turso_engine, ejecutar_migraciones_sqlite, ejecutar_migraciones_turso
 from utils.backups import ejecutar_backup_diario
 from seed import sembrar_datos_completos
 from worker_sync import iniciar_worker_sync_background
@@ -59,6 +59,7 @@ async def lifespan(app: FastAPI):
     if turso_engine:
         try:
             Base.metadata.create_all(bind=turso_engine)
+            ejecutar_migraciones_turso(turso_engine)
             temp_session = sessionmaker(autocommit=False, autoflush=False, bind=turso_engine)()
             if temp_session.query(usuarios_models.Usuario).filter(usuarios_models.Usuario.username == "luca").first() is None:
                 nuevo_empleado = usuarios_models.Usuario(

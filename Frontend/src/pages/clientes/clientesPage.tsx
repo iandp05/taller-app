@@ -1,10 +1,11 @@
 // Frontend/src/pages/clientes/clientesPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Alert } from 'react-bootstrap';
 import { Cliente } from '../../types';
 import { getClientes, deleteCliente } from '../../api/clientesApi';
 import ClienteModal from './clienteModal';
 import ConfirmModal from '../../components/ConfirmModal';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 export default function ClientesPage() {
     const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -19,19 +20,20 @@ export default function ClientesPage() {
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 5;
 
-    const cargarClientes = async () => {
+    const cargarClientes = useCallback(async () => {
         try {
             const data = await getClientes();
             setClientes(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error al obtener clientes:", error);
-            setClientes([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         cargarClientes();
-    }, []);
+    }, [cargarClientes]);
+
+    useAutoRefresh(cargarClientes, 5000);
 
     useEffect(() => {
         setPaginaActual(1);

@@ -1,10 +1,11 @@
 // Frontend/src/pages/vehiculos/vehiculosPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Alert } from 'react-bootstrap';
 import { Vehiculo } from '../../types';
 import { getVehiculos, deleteVehiculo } from '../../api/vehiculosApi';
 import VehiculoModal from './vehiculosModal';
 import ConfirmModal from '../../components/ConfirmModal';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 export default function VehiculosPage() {
     const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
@@ -19,19 +20,20 @@ export default function VehiculosPage() {
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 5;
 
-    const cargarVehiculos = async () => {
+    const cargarVehiculos = useCallback(async () => {
         try {
             const data = await getVehiculos();
             setVehiculos(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error al obtener vehículos:", error);
-            setVehiculos([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         cargarVehiculos();
-    }, []);
+    }, [cargarVehiculos]);
+
+    useAutoRefresh(cargarVehiculos, 5000);
 
     useEffect(() => {
         setPaginaActual(1);

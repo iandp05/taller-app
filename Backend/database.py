@@ -127,3 +127,20 @@ def ejecutar_migraciones_sqlite():
         conn.close()
     except Exception as e:
         print("Aviso de migración SQLite:", e)
+
+def ejecutar_migraciones_turso(turso_engine):
+    if not turso_engine:
+        return
+    try:
+        with turso_engine.connect() as conn:
+            try:
+                conn.execute("ALTER TABLE configuracion_taller ADD COLUMN updated_at DATETIME;")
+            except Exception:
+                pass
+
+            try:
+                conn.execute("ALTER TABLE usuarios ADD COLUMN updated_at DATETIME;")
+            except Exception:
+                pass
+    except Exception as e:
+        print("Aviso de migración Turso:", e)

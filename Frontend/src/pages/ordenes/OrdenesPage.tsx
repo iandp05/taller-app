@@ -1,5 +1,5 @@
 // Frontend/src/pages/ordenes/OrdenesPage.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Badge, Modal, Alert } from 'react-bootstrap';
 import { OrdenTrabajo, Vehiculo, Cliente } from '../../types';
 import { getOrdenes, deleteOrden } from '../../api/ordenesApi';
@@ -8,6 +8,7 @@ import { getClientes } from '../../api/clientesApi';
 import OrdenModal from './OrdenModal';
 import OrdenPdfModal from './OrdenPDFModal'; 
 import ConfirmModal from '../../components/ConfirmModal';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 export default function OrdenesPage() {
     const [ordenes, setOrdenes] = useState<OrdenTrabajo[]>([]);
@@ -30,7 +31,7 @@ export default function OrdenesPage() {
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 5;
 
-    const cargarDatos = async () => {
+    const cargarDatos = useCallback(async () => {
         try {
             const [ordenesData, vehiculosData, clientesData] = await Promise.all([
                 getOrdenes(),
@@ -42,15 +43,14 @@ export default function OrdenesPage() {
             setClientes(Array.isArray(clientesData) ? clientesData : []);
         } catch (error) {
             console.error("Error al obtener los datos:", error);
-            setOrdenes([]);
-            setVehiculos([]);
-            setClientes([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         cargarDatos();
-    }, []);
+    }, [cargarDatos]);
+
+    useAutoRefresh(cargarDatos, 5000);
 
     useEffect(() => {
         setPaginaActual(1);
