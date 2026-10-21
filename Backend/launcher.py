@@ -1,6 +1,8 @@
 # backend/launcher.py
 import sys
 import os
+import socket
+import time
 import subprocess
 
 CREATE_NO_WINDOW = 0x08000000  # Windows API flag para suprimir consolas CMD
@@ -77,6 +79,17 @@ def iniciar_servidor():
         reload=False
     )
 
+def esperar_servidor(host="127.0.0.1", port=8000, timeout=15):
+    """Espera activamente a que el servidor HTTP de FastAPI esté listo y aceptando conexiones en el puerto 8000."""
+    inicio = time.time()
+    while time.time() - inicio < timeout:
+        try:
+            with socket.create_connection((host, port), timeout=0.5):
+                return True
+        except (OSError, ConnectionRefusedError):
+            time.sleep(0.1)
+    return False
+
 def main():
     # 1. Crear acceso directo en el Escritorio de Windows de forma 100% silenciosa
     crear_acceso_directo_escritorio()
@@ -85,7 +98,10 @@ def main():
     server_thread = threading.Thread(target=iniciar_servidor, daemon=True)
     server_thread.start()
 
-    # 3. Abrir ventana nativa de escritorio independiente (PyWebView - estilo Android Studio / Steam)
+    # 3. Aguardar a que el servidor FastAPI esté 100% activo en el puerto 8000 antes de abrir la ventana gráfica
+    esperar_servidor("127.0.0.1", 8000, timeout=15)
+
+    # 4. Abrir ventana nativa de escritorio independiente (PyWebView - estilo Android Studio / Steam)
     webview.create_window(
         title="Taller ERP - Sistema de Gestión",
         url="http://127.0.0.1:8000",
