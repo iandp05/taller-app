@@ -4,7 +4,7 @@ import sys
 import json
 import sqlite3
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, event, Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, event, Column, Integer, String, Text, DateTime, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from fastapi import Request
 from utils.paths import APP_PATHS
@@ -134,12 +134,14 @@ def ejecutar_migraciones_turso(turso_engine):
     try:
         with turso_engine.connect() as conn:
             try:
-                conn.execute("ALTER TABLE configuracion_taller ADD COLUMN updated_at DATETIME;")
+                conn.execute(text("ALTER TABLE configuracion_taller ADD COLUMN updated_at DATETIME;"))
+                conn.commit()
             except Exception:
                 pass
 
             try:
-                conn.execute("ALTER TABLE usuarios ADD COLUMN updated_at DATETIME;")
+                conn.execute(text("ALTER TABLE usuarios ADD COLUMN updated_at DATETIME;"))
+                conn.commit()
             except Exception:
                 pass
     except Exception as e:
