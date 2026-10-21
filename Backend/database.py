@@ -41,16 +41,24 @@ engine = engine_local
 SesionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_local)
 Base = declarative_base()
 
-# Engine para conexión remota con Turso Cloud DB cargado estrictamente desde .env
+# Singleton Engine y SessionFactory para Turso Cloud DB
+_TURSO_ENGINE_SINGLETON = None
+_TURSO_SESSION_FACTORY = None
+
 def get_turso_engine():
+    global _TURSO_ENGINE_SINGLETON
+    if _TURSO_ENGINE_SINGLETON is not None:
+        return _TURSO_ENGINE_SINGLETON
+
     turso_url = os.environ.get("TURSO_DATABASE_URL")
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
     if turso_url and turso_token:
         try:
-            return create_engine(
+            _TURSO_ENGINE_SINGLETON = create_engine(
                 "sqlite://",
                 creator=lambda: utils.turso_driver.connect(turso_url, turso_token)
             )
+            return _TURSO_ENGINE_SINGLETON
         except Exception as e:
             print("Aviso al crear engine de Turso:", e)
             return None
@@ -76,15 +84,16 @@ def registrar_en_cola_sincronizacion(conn, cursor, statement, parameters, contex
 
 def get_db_session_for_taller(taller_slug: str = "default"):
     """
-    Arquitectura Local-First: La sesión de base de datos lee y escribe
-    en el motor SQLite local. Las operaciones se encolan mediante
-    eventos en 'sync_queue' y el worker de fondo las sincroniza con Turso.
+    Arquitectura Local-First con Singleton Engine:
+    En Render/Netlify reutiliza la fábrica de sesiones persistente en RAM.
     """
-    # En entornos puramente en la nube (Render / Netlify), si están configuradas las variables, usa Turso directamente
+    global _TURSO_SESSION_FACTORY
     if os.environ.get("RENDER") or os.environ.get("NETLIFY"):
         turso_engine = get_turso_engine()
         if turso_engine:
-            return sessionmaker(autocommit=False, autoflush=False, bind=turso_engine)()
+            if _TURSO_SESSION_FACTORY is None:
+                _TURSO_SESSION_FACTORY = sessionmaker(autocommit=False, autoflush=False, bind=turso_engine)
+            return _TURSO_SESSION_FACTORY()
 
     return SesionLocal()
 

@@ -1,16 +1,23 @@
 # backend/modulos/presupuestos/services.py
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
 from . import models, schemas
 from typing import Optional
 from modulos.vehiculos.models import Vehiculo
 
-def get_presupuesto(db: Session, presupuesto_id: int):
-    return db.query(models.Presupuesto).filter(models.Presupuesto.id == presupuesto_id).first()
+def get_presupuesto(db: Session, presupuesto_id: str):
+    return db.query(models.Presupuesto).options(
+        joinedload(models.Presupuesto.vehiculo),
+        joinedload(models.Presupuesto.cliente),
+        joinedload(models.Presupuesto.mecanico)
+    ).filter(models.Presupuesto.id == presupuesto_id).first()
 
 def get_presupuestos(db: Session, skip: int = 0, limit: int = 100):
-    # ORDENAMIENTO: Siempre devolver los más nuevos primero
-    return db.query(models.Presupuesto).order_by(models.Presupuesto.id.desc()).offset(skip).limit(limit).all()
+    return db.query(models.Presupuesto).options(
+        joinedload(models.Presupuesto.vehiculo),
+        joinedload(models.Presupuesto.cliente),
+        joinedload(models.Presupuesto.mecanico)
+    ).order_by(models.Presupuesto.fecha_creacion.desc()).offset(skip).limit(limit).all()
 
 def create_presupuesto(db: Session, presupuesto: schemas.PresupuestoCreate):
     # PROTECCIÓN 1: Validar existencia del vehículo y congelar al dueño real

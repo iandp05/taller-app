@@ -55,15 +55,23 @@ class TursoCursor:
             return str(val)
 
     def execute(self, sql, parameters=()):
-        args = [self._convert_arg(p) for p in parameters] if parameters else []
+        stmt = {"sql": sql}
+        if isinstance(parameters, dict):
+            named_args = {}
+            for k, v in parameters.items():
+                param_key = k[1:] if k.startswith(":") else k
+                named_args[param_key] = self._convert_arg(v)
+            stmt["named_args"] = named_args
+        elif parameters:
+            stmt["args"] = [self._convert_arg(p) for p in parameters]
+        else:
+            stmt["args"] = []
+
         payload = {
             "requests": [
                 {
                     "type": "execute",
-                    "stmt": {
-                        "sql": sql,
-                        "args": args
-                    }
+                    "stmt": stmt
                 }
             ]
         }
@@ -127,13 +135,21 @@ class TursoCursor:
             return self
         requests = []
         for params in seq_of_parameters:
-            args = [self._convert_arg(p) for p in params] if params else []
+            stmt = {"sql": sql}
+            if isinstance(params, dict):
+                named_args = {}
+                for k, v in params.items():
+                    param_key = k[1:] if k.startswith(":") else k
+                    named_args[param_key] = self._convert_arg(v)
+                stmt["named_args"] = named_args
+            elif params:
+                stmt["args"] = [self._convert_arg(p) for p in params]
+            else:
+                stmt["args"] = []
+
             requests.append({
                 "type": "execute",
-                "stmt": {
-                    "sql": sql,
-                    "args": args
-                }
+                "stmt": stmt
             })
 
         payload = {"requests": requests}

@@ -1,16 +1,24 @@
 # backend/modulos/ordenes/services.py
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
 from typing import Optional
 from . import models, schemas
 from modulos.inventario import services as inventario_services
 from modulos.vehiculos.models import Vehiculo 
 
-def get_orden(db: Session, orden_id: int):
-    return db.query(models.OrdenTrabajo).filter(models.OrdenTrabajo.id == orden_id).first()
+def get_orden(db: Session, orden_id: str):
+    return db.query(models.OrdenTrabajo).options(
+        joinedload(models.OrdenTrabajo.vehiculo),
+        joinedload(models.OrdenTrabajo.cliente),
+        joinedload(models.OrdenTrabajo.mecanico)
+    ).filter(models.OrdenTrabajo.id == orden_id).first()
 
-def get_ordenes(db: Session, skip: int = 0, limit: int = 100, vehiculo_id: Optional[int] = None):
-    query = db.query(models.OrdenTrabajo)
+def get_ordenes(db: Session, skip: int = 0, limit: int = 100, vehiculo_id: Optional[str] = None):
+    query = db.query(models.OrdenTrabajo).options(
+        joinedload(models.OrdenTrabajo.vehiculo),
+        joinedload(models.OrdenTrabajo.cliente),
+        joinedload(models.OrdenTrabajo.mecanico)
+    )
     if vehiculo_id:
         query = query.filter(models.OrdenTrabajo.vehiculo_id == vehiculo_id)
     return query.offset(skip).limit(limit).all()

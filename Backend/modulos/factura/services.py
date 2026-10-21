@@ -1,14 +1,22 @@
 # backend/modulos/facturas/services.py
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from fastapi import HTTPException
 from . import models, schemas
 from modulos.inventario import services as inventario_services
 
-def get_factura(db: Session, factura_id: int):
-    return db.query(models.Factura).filter(models.Factura.id == factura_id).first()
+def get_factura(db: Session, factura_id: str):
+    return db.query(models.Factura).options(
+        joinedload(models.Factura.vehiculo),
+        joinedload(models.Factura.cliente),
+        joinedload(models.Factura.mecanico)
+    ).filter(models.Factura.id == factura_id).first()
 
 def get_facturas(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Factura).order_by(models.Factura.id.desc()).offset(skip).limit(limit).all()
+    return db.query(models.Factura).options(
+        joinedload(models.Factura.vehiculo),
+        joinedload(models.Factura.cliente),
+        joinedload(models.Factura.mecanico)
+    ).order_by(models.Factura.fecha_emision.desc()).offset(skip).limit(limit).all()
 
 def create_factura(db: Session, factura: schemas.FacturaCreate):
     total_general = 0.0

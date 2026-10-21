@@ -9,13 +9,13 @@ class OrdenTrabajo(Base):
     __tablename__ = "ordenes_trabajo"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    vehiculo_id = Column(String(36), ForeignKey("vehiculos.id"), nullable=False)
-    cliente_id = Column(String(36), ForeignKey("clientes.id"), nullable=True)
-    mecanico_id = Column(String(36), ForeignKey("usuarios.id"), nullable=True)
+    vehiculo_id = Column(String(36), ForeignKey("vehiculos.id"), nullable=False, index=True)
+    cliente_id = Column(String(36), ForeignKey("clientes.id"), nullable=True, index=True)
+    mecanico_id = Column(String(36), ForeignKey("usuarios.id"), nullable=True, index=True)
     
     fecha_ingreso = Column(DateTime, default=datetime.datetime.utcnow)
     descripcion_falla = Column(Text, nullable=False)
-    estado = Column(String(50), default="En Recepción")
+    estado = Column(String(50), default="En Recepción", index=True)
     costo_mano_obra = Column(Float, default=0.0)
     total = Column(Float, default=0.0)
 
@@ -27,6 +27,7 @@ class OrdenTrabajo(Base):
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     vehiculo = relationship("Vehiculo", back_populates="ordenes")
+    cliente = relationship("Cliente")
     mecanico = relationship("Usuario", back_populates="ordenes_atendidas")
     detalles = relationship("DetalleOrden", back_populates="orden", cascade="all, delete-orphan")
 

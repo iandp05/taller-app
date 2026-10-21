@@ -61,12 +61,11 @@ def procesar_cola_sincronizacion():
                             turso_cur.execute(sql_statement, single_param)
                 else:
                     if isinstance(params, dict):
-                        sql_params = list(params.values())
+                        turso_cur.execute(sql_statement, params)
                     elif isinstance(params, (list, tuple)):
-                        sql_params = params
+                        turso_cur.execute(sql_statement, params)
                     else:
-                        sql_params = ()
-                    turso_cur.execute(sql_statement, sql_params)
+                        turso_cur.execute(sql_statement, ())
 
                 cursor_local.execute("UPDATE sync_queue SET status='COMPLETED' WHERE id=?", (req_id,))
                 conn_local.commit()
