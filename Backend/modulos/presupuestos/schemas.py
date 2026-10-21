@@ -34,6 +34,15 @@ class PresupuestoBase(BaseModel):
 class PresupuestoCreate(PresupuestoBase):
     detalles: List[DetallePresupuestoCreate] = []
 
+class PresupuestoUpdate(BaseModel):
+    vehiculo_id: Optional[str] = None
+    cliente_id: Optional[str] = None
+    mecanico_id: Optional[str] = None
+    estado: Optional[str] = None
+    validez_dias: Optional[str] = None
+    condiciones_pago: Optional[str] = None
+    detalles: Optional[List[DetallePresupuestoCreate]] = None
+
 class PresupuestoResponse(PresupuestoBase):
     id: str
     fecha_creacion: datetime

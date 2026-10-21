@@ -19,8 +19,15 @@ class ConfiguracionTallerBase(BaseModel):
 class ConfiguracionTallerCreate(ConfiguracionTallerBase):
     pass
 
+class ConfiguracionTallerUpdate(ConfiguracionTallerBase):
+    pass
+
 class ConfiguracionTallerResponse(ConfiguracionTallerBase):
     id: str
 
     class Config:
         from_attributes = True
+
+# Aliases for router compatibility
+ConfiguracionResponse = ConfiguracionTallerResponse
+ConfiguracionUpdate = ConfiguracionTallerUpdate

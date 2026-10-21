@@ -37,6 +37,15 @@ class FacturaBase(BaseModel):
 class FacturaCreate(FacturaBase):
     detalles: List[DetalleFacturaCreate] = []
 
+class FacturaUpdate(BaseModel):
+    vehiculo_id: Optional[str] = None
+    cliente_id: Optional[str] = None
+    mecanico_id: Optional[str] = None
+    tipo_comprobante: Optional[str] = None
+    punto_venta: Optional[str] = None
+    condicion_venta: Optional[str] = None
+    detalles: Optional[List[DetalleFacturaCreate]] = None
+
 class FacturaResponse(FacturaBase):
     id: str
     numero_comprobante: int
