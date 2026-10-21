@@ -1,4 +1,5 @@
 import pytest
+import json
 from modulos.sync.models import SyncQueue
 
 def test_sync_queue_model(db_session):
@@ -15,3 +16,17 @@ def test_sync_queue_model(db_session):
     assert saved is not None
     assert "INSERT INTO clientes" in saved.sql_statement
     assert saved.status == "PENDING"
+
+def test_sync_queue_executemany_batch_detection():
+    params_raw = json.dumps([["Toyota", "Corolla"], ["Ford", "Focus"]])
+    params = json.loads(params_raw)
+
+    is_batch = isinstance(params, (list, tuple)) and len(params) > 0 and isinstance(params[0], (list, tuple, dict))
+    assert is_batch is True
+
+    batch_params = [
+        list(p.values()) if isinstance(p, dict) else p
+        for p in params
+    ]
+    assert len(batch_params) == 2
+    assert batch_params[0] == ["Toyota", "Corolla"]

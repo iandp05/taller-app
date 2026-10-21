@@ -122,6 +122,48 @@ class TursoCursor:
         except Exception as e:
             raise TursoError(f"Error en petición HTTP Turso: {e}")
 
+    def executemany(self, sql, seq_of_parameters):
+        if not seq_of_parameters:
+            return self
+        requests = []
+        for params in seq_of_parameters:
+            args = [self._convert_arg(p) for p in params] if params else []
+            requests.append({
+                "type": "execute",
+                "stmt": {
+                    "sql": sql,
+                    "args": args
+                }
+            })
+
+        payload = {"requests": requests}
+
+        req = urllib.request.Request(
+            self.connection.pipeline_url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {self.connection.auth_token}",
+                "Content-Type": "application/json"
+            }
+        )
+
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                results = data.get("results", [])
+                for res in results:
+                    if res.get("type") == "error":
+                        raise TursoError(res.get("error", {}).get("message", "Error en Turso"))
+                return self
+        except urllib.error.HTTPError as e:
+            try:
+                err_body = e.read().decode("utf-8")
+                raise TursoError(f"HTTP Error {e.code}: {err_body}")
+            except:
+                raise TursoError(f"HTTP Error {e.code}: {e.reason}")
+        except Exception as e:
+            raise TursoError(f"Error en petición HTTP Turso executemany: {e}")
+
     def fetchone(self):
         if self._index < len(self._rows):
             row = self._rows[self._index]

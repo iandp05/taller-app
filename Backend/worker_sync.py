@@ -43,15 +43,31 @@ def procesar_cola_sincronizacion():
         for req_id, sql_statement, params_raw in pendientes:
             params = json.loads(params_raw) if params_raw else ()
 
-            if isinstance(params, dict):
-                sql_params = list(params.values())
-            elif isinstance(params, (list, tuple)):
-                sql_params = params
-            else:
-                sql_params = ()
+            is_batch = False
+            if isinstance(params, (list, tuple)) and len(params) > 0:
+                if isinstance(params[0], (list, tuple, dict)):
+                    is_batch = True
 
             try:
-                turso_cur.execute(sql_statement, sql_params)
+                if is_batch:
+                    batch_params = [
+                        list(p.values()) if isinstance(p, dict) else p
+                        for p in params
+                    ]
+                    if hasattr(turso_cur, "executemany"):
+                        turso_cur.executemany(sql_statement, batch_params)
+                    else:
+                        for single_param in batch_params:
+                            turso_cur.execute(sql_statement, single_param)
+                else:
+                    if isinstance(params, dict):
+                        sql_params = list(params.values())
+                    elif isinstance(params, (list, tuple)):
+                        sql_params = params
+                    else:
+                        sql_params = ()
+                    turso_cur.execute(sql_statement, sql_params)
+
                 cursor_local.execute("UPDATE sync_queue SET status='COMPLETED' WHERE id=?", (req_id,))
                 conn_local.commit()
             except Exception as e:
