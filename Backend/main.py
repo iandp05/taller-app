@@ -1,6 +1,7 @@
 # backend/main.py
 import os
 import sys
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -38,38 +39,44 @@ from modulos.configuracion import router as configuracion_router
 from modulos.actualizaciones import router as actualizaciones_router
 
 # ==========================================
-# AUTO-CREACIÓN DE ESTRUCTURA DDL Y SEMBRADO EN LOCAL Y TURSO CLOUD DB
+# LIFESPAN CONTEXT MANAGER (CREACIÓN AUTOMÁTICA DDL EN AMBOS MOTORES)
 # ==========================================
-try:
-    Base.metadata.create_all(bind=engine)
-    ejecutar_migraciones_sqlite()
-    ejecutar_backup_diario()
-    sembrar_datos_completos()
-except Exception as err_loc:
-    print("Aviso al inicializar BDD local:", err_loc)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 1. Crear tablas en SQLite local
+    try:
+        Base.metadata.create_all(bind=engine)
+        ejecutar_migraciones_sqlite()
+        ejecutar_backup_diario()
+        sembrar_datos_completos()
+    except Exception as err_loc:
+        print("Aviso al inicializar BDD local:", err_loc)
 
-# Auto-crear esquema DDL y usuario 'luca' (1234) en Turso Cloud DB al arrancar el servidor
-try:
-    turso_engine = get_turso_engine()
-    if turso_engine:
-        Base.metadata.create_all(bind=turso_engine)
-        temp_session = sessionmaker(autocommit=False, autoflush=False, bind=turso_engine)()
-        sembrar_datos_completos(session=temp_session, bind_engine=turso_engine)
-        temp_session.close()
-        print("--- ¡Estructura DDL y Usuario inicial creados en Turso Cloud DB! ---")
-except Exception as err_tur:
-    print("Aviso al inicializar BDD en Turso Cloud DB:", err_tur)
+    # 2. Crear tablas DDL obligatorias en Turso Cloud DB y sembrar usuario 'luca' (1234)
+    try:
+        turso_engine = get_turso_engine()
+        if turso_engine:
+            Base.metadata.create_all(bind=turso_engine)
+            temp_session = sessionmaker(autocommit=False, autoflush=False, bind=turso_engine)()
+            sembrar_datos_completos(session=temp_session, bind_engine=turso_engine)
+            temp_session.close()
+            print("--- ¡Estructura DDL y Usuario inicial creados en Turso Cloud DB! ---")
+    except Exception as err_tur:
+        print("Aviso al inicializar BDD en Turso Cloud DB:", err_tur)
 
-# Iniciar worker de sincronización Local-First Outbox en segundo plano
-try:
-    iniciar_worker_sync_background(intervalo_segundos=7)
-except Exception as err_w:
-    print("Aviso al iniciar worker de sincronización:", err_w)
+    # 3. Iniciar worker de sincronización Outbox en segundo plano
+    try:
+        iniciar_worker_sync_background(intervalo_segundos=7)
+    except Exception as err_w:
+        print("Aviso al iniciar worker de sincronización:", err_w)
+
+    yield
 
 app = FastAPI(
     title="API Taller Mecánico",
     description="Sistema ERP/CRM para gestión local de clientes, vehículos, stock y órdenes de trabajo.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 @app.exception_handler(Exception)

@@ -1,25 +1,25 @@
+# backend/modulos/presupuestos/models.py
+import uuid
+import datetime
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
 from database import Base
 
 class Presupuesto(Base):
     __tablename__ = "presupuestos"
 
-    id = Column(Integer, primary_key=True, index=True)
-    vehiculo_id = Column(Integer, ForeignKey("vehiculos.id"))
-    cliente_id = Column(Integer, ForeignKey("clientes.id"))
-    mecanico_id = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    vehiculo_id = Column(String(36), ForeignKey("vehiculos.id"))
+    cliente_id = Column(String(36), ForeignKey("clientes.id"))
+    mecanico_id = Column(String(36), ForeignKey("usuarios.id"), nullable=True)
 
-    fecha_creacion = Column(DateTime, default=datetime.utcnow)
-    estado = Column(String, default="Emitido") # Opciones: Emitido, Aprobado, Rechazado
-    
-    validez_dias = Column(String, default="15 días")
-    condiciones_pago = Column(String, default="Efectivo / Transferencia")
-    
+    fecha_creacion = Column(DateTime, default=datetime.datetime.utcnow)
+    estado = Column(String(50), default="Emitido")
+    validez_dias = Column(String(50), default="15 días")
+    condiciones_pago = Column(String(100), default="Efectivo / Transferencia")
     total = Column(Float, default=0.0)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
-    # Relaciones
     vehiculo = relationship("Vehiculo")
     cliente = relationship("Cliente")
     mecanico = relationship("Usuario")
@@ -29,13 +29,13 @@ class Presupuesto(Base):
 class DetallePresupuesto(Base):
     __tablename__ = "detalle_presupuestos"
 
-    id = Column(Integer, primary_key=True, index=True)
-    presupuesto_id = Column(Integer, ForeignKey("presupuestos.id"))
-    producto_id = Column(Integer, ForeignKey("productos.id"), nullable=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    presupuesto_id = Column(String(36), ForeignKey("presupuestos.id"))
+    producto_id = Column(String(36), ForeignKey("inventario.id"), nullable=True)
     
-    descripcion = Column(String)
+    descripcion = Column(String(200))
     cantidad = Column(Integer, default=1)
     precio_unitario = Column(Float, default=0.0)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
-    # Relaciones
     presupuesto = relationship("Presupuesto", back_populates="detalles")
