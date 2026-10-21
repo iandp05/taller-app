@@ -4,13 +4,14 @@ import json
 import os
 import threading
 import sqlite3
-from dotenv import load_dotenv
+from database import cargar_env_multi_ruta
 from utils.paths import APP_PATHS
 import utils.turso_driver
 
-load_dotenv()
+cargar_env_multi_ruta()
 
 def procesar_cola_sincronizacion():
+    cargar_env_multi_ruta()
     turso_url_env = os.environ.get("TURSO_DATABASE_URL")
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
 
@@ -80,7 +81,6 @@ def procesar_cola_sincronizacion():
                     cursor_local.execute("UPDATE sync_queue SET retries = retries + 1 WHERE id=?", (req_id,))
                     conn_local.commit()
                     break  # Abortar ciclo para preservar orden estricto cuando no hay red
-                break  # Abortar ciclo para preservar orden estricto
 
         conn_local.close()
     except Exception as err:
@@ -91,8 +91,9 @@ def sincronizar_desde_turso():
     Sincronización descendente (Turso Cloud DB -> SQLite Local):
     Lee los registros guardados en Turso Cloud DB e inserta/actualiza (UPSERT)
     en la base de datos SQLite local para que la App de Escritorio vea en tiempo real
-    los datos creados o modificados desde la Web de Netlify.
+    los datos creados o modificados desde la Web.
     """
+    cargar_env_multi_ruta()
     turso_url_env = os.environ.get("TURSO_DATABASE_URL")
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
 
