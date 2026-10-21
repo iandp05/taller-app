@@ -11,7 +11,7 @@ export const getProductos = async (): Promise<Producto[]> => {
     }
 };
 
-export const getProductoById = async (id: number): Promise<Producto> => {
+export const getProductoById = async (id: string | number): Promise<Producto> => {
     const response = await api.get<Producto>(`/inventario/${id}`);
     return response.data;
 };
@@ -21,11 +21,11 @@ export const createProducto = async (producto: ProductoCreate): Promise<Producto
     return response.data;
 };
 
-export const updateProducto = async (id: number, producto: Partial<ProductoCreate>): Promise<Producto> => {
+export const updateProducto = async (id: string | number, producto: Partial<ProductoCreate>): Promise<Producto> => {
     const response = await api.put<Producto>(`/inventario/${id}`, producto);
     return response.data;
 };
 
-export const deleteProducto = async (id: number): Promise<void> => {
+export const deleteProducto = async (id: string | number): Promise<void> => {
     await api.delete(`/inventario/${id}`);
 };

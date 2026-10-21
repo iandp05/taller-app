@@ -1,4 +1,4 @@
-// Frontend/src/pages/ordenes/OrdenPdfModal.tsx
+// Frontend/src/pages/ordenes/OrdenPDFModal.tsx
 import { useEffect, useState } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer'; 
@@ -12,7 +12,7 @@ import { formatEmpresaConfig } from '../../config/empresaConfig';
 interface OrdenPdfModalProps {
     show: boolean;
     handleClose: () => void;
-    ordenId: number | null;
+    ordenId: string | number | null;
 }
 
 export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfModalProps) {
@@ -27,75 +27,88 @@ export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfMo
             if (!ordenId) return;
             
             setCargandoPDF(true);
-
             try {
-                const [ordenData, vehiculosData, clientesData, configData] = await Promise.all([
-                    getOrdenById(ordenId),
+                const ordenData = await getOrdenById(ordenId as any);
+                setOrdenCompleta(ordenData);
+
+                const [vehiculosData, clientesData, configData] = await Promise.all([
                     getVehiculos(),
                     getClientes(),
-                    getConfiguracion().catch(() => null)
+                    getConfiguracion()
                 ]);
 
-                setConfigTaller(configData);
+                if (configData) setConfigTaller(formatEmpresaConfig(configData));
 
-                const vehiculoEncontrado = vehiculosData.find(v => v.id === ordenData.vehiculo_id);
-                setVehiculo(vehiculoEncontrado);
+                let v = (Array.isArray(vehiculosData) ? vehiculosData : []).find((veh: any) => String(veh.id) === String(ordenData.vehiculo_id));
+                setVehiculo(v || null);
 
-                if (vehiculoEncontrado) {
-                    const idDuenoOrden = ordenData.cliente_id ? ordenData.cliente_id : vehiculoEncontrado.cliente_id;
-                    const clienteEncontrado = clientesData.find(c => c.id === idDuenoOrden);
-                    setCliente(clienteEncontrado);
+                let c = (Array.isArray(clientesData) ? clientesData : []).find((cli: any) => String(cli.id) === String(ordenData.cliente_id));
+                if (!c && v && v.cliente_id) {
+                    c = (Array.isArray(clientesData) ? clientesData : []).find((cli: any) => String(cli.id) === String(v.cliente_id));
                 }
-
-                setOrdenCompleta(ordenData);
-                setCargandoPDF(false);
+                setCliente(c || null);
 
             } catch (error) {
-                console.error("Error cargando datos del documento", error);
+                console.error("Error al generar el PDF de la Orden:", error);
+            } finally {
                 setCargandoPDF(false);
             }
         };
 
         if (show) {
             cargarDatosOrden();
-        } else {
-            setOrdenCompleta(null);
-            setVehiculo(null);
-            setCliente(null);
         }
     }, [show, ordenId]);
 
+    const handleImprimirPagina = () => {
+        window.print();
+    };
+
     return (
-        <Modal show={show} onHide={handleClose} size="xl" centered>
-            <Modal.Header closeButton className="bg-dark text-white">
-                <Modal.Title>Orden de Reparación PDF</Modal.Title>
+        <Modal show={show} onHide={handleClose} size="lg" centered bodyClassName="p-0">
+            <Modal.Header closeButton>
+                <Modal.Title>Comprobante de Orden de Trabajo #{ordenCompleta?.id ? String(ordenCompleta.id).slice(0, 8) : ''}</Modal.Title>
             </Modal.Header>
-            <Modal.Body className="p-0" style={{ height: '70vh' }}>
-                {!cargandoPDF && ordenCompleta && cliente && vehiculo ? (
-                    <PDFViewer width="100%" height="100%">
-                        <OrdenReparacionTemplate 
-                            planilla={ordenCompleta} 
-                            vehiculo={vehiculo} 
-                            cliente={cliente} 
+            <Modal.Body style={{ height: '75vh' }}>
+                {cargandoPDF || !ordenCompleta || !vehiculo || !cliente ? (
+                    <div className="d-flex justify-content-center align-items-center h-100">
+                        <p>Generando vista previa del documento...</p>
+                    </div>
+                ) : (
+                    <PDFViewer width="100%" height="100%" style={{ border: 'none' }}>
+                        <OrdenReparacionTemplate
+                            planilla={ordenCompleta}
+                            vehiculo={vehiculo}
+                            cliente={cliente}
                             empresaConfig={configTaller}
                         />
                     </PDFViewer>
-                ) : (
-                    <div className="d-flex justify-content-center align-items-center h-100 flex-column">
-                        <div className="spinner-border text-primary mb-3" role="status"></div>
-                        <p className="text-muted">Recolectando datos y generando documento...</p>
-                    </div>
                 )}
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={handleClose}>Cerrar</Button>
-                {!cargandoPDF && ordenCompleta && (
+                <Button variant="secondary" onClick={handleClose}>
+                    Cerrar
+                </Button>
+                <Button variant="info" onClick={handleImprimirPagina} disabled={cargandoPDF || !ordenCompleta}>
+                    Imprimir Documento
+                </Button>
+                {ordenCompleta && vehiculo && cliente && (
                     <PDFDownloadLink
-                        document={<OrdenReparacionTemplate planilla={ordenCompleta} vehiculo={vehiculo} cliente={cliente} empresaConfig={configTaller} />}
-                        fileName={`${formatEmpresaConfig(configTaller).pdfFileNamePrefix}_Orden_${ordenId}.pdf`}
-                        className="btn btn-primary"
+                        document={
+                            <OrdenReparacionTemplate
+                                planilla={ordenCompleta}
+                                vehiculo={vehiculo}
+                                cliente={cliente}
+                                empresaConfig={configTaller}
+                            />
+                        }
+                        fileName={`Orden_${ordenCompleta.id}.pdf`}
                     >
-                        {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
+                        {({ loading }) => (
+                            <Button variant="primary" disabled={loading}>
+                                {loading ? 'Preparando...' : 'Descargar Archivo PDF'}
+                            </Button>
+                        )}
                     </PDFDownloadLink>
                 )}
             </Modal.Footer>

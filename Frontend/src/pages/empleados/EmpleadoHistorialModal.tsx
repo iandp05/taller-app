@@ -16,7 +16,7 @@ interface EmpleadoHistorialModalProps {
 
 export interface DocumentoHistorial {
     idKey: string;
-    id: number;
+    id: string | number;
     tipo: 'Orden de Trabajo' | 'Presupuesto' | 'Factura';
     referencia: string;
     fecha: Date;
@@ -38,21 +38,16 @@ export default function EmpleadoHistorialModal({ show, handleClose, empleado }: 
 
     useEffect(() => {
         if (show && empleado) {
-            cargarHistorialEmpleado();
-        } else {
-            setDocumentos([]);
-            setBusqueda('');
-            setFiltroEstado('Todos');
-            setFiltroTipo('Todos');
+            cargarHistorialCompleto();
         }
     }, [show, empleado]);
 
-    const cargarHistorialEmpleado = async () => {
+    const cargarHistorialCompleto = async () => {
         if (!empleado) return;
         setCargando(true);
 
         try {
-            const [ordenesData, presupuestosData, facturasData, vehiculosData, clientesData] = await Promise.all([
+            const [ordenes, presupuestos, facturas, vehiculos, clientes] = await Promise.all([
                 getOrdenes(),
                 getPresupuestos(),
                 getFacturas(),
@@ -60,307 +55,236 @@ export default function EmpleadoHistorialModal({ show, handleClose, empleado }: 
                 getClientes()
             ]);
 
-            const getVehiculoObj = (vehiculoId: number) => vehiculosData.find(v => v.id === vehiculoId);
-            const getClienteObj = (clienteId?: number, vehiculoId?: number) => {
-                if (clienteId) return clientesData.find(c => c.id === clienteId);
+            const listaOrdenes = Array.isArray(ordenes) ? ordenes : [];
+            const listaPresupuestos = Array.isArray(presupuestos) ? presupuestos : [];
+            const listaFacturas = Array.isArray(facturas) ? facturas : [];
+            const listaVehiculos = Array.isArray(vehiculos) ? vehiculos : [];
+            const listaClientes = Array.isArray(clientes) ? clientes : [];
+
+            const getVehiculoObj = (id?: string | number) => id ? listaVehiculos.find(v => String(v.id) === String(id)) : undefined;
+            const getClienteObj = (clienteId?: string | number, vehiculoId?: string | number) => {
+                if (clienteId) {
+                    const c = listaClientes.find(cli => String(cli.id) === String(clienteId));
+                    if (c) return c;
+                }
                 if (vehiculoId) {
                     const v = getVehiculoObj(vehiculoId);
-                    if (v) return clientesData.find(c => c.id === v.cliente_id);
+                    if (v && v.cliente_id) return listaClientes.find(cli => String(cli.id) === String(v.cliente_id));
                 }
-                return null;
+                return undefined;
             };
 
-            // 1. Filtrar Órdenes de Trabajo del Mecánico
-            const ordenesMecanico = ordenesData.filter(
-                o => o.mecanico_id === empleado.id || o.mecanico?.id === empleado.id
-            );
+            const ordenesMecanico = listaOrdenes.filter(o => String(o.mecanico_id) === String(empleado.id));
+            const presupuestosMecanico = listaPresupuestos.filter(p => String(p.mecanico_id) === String(empleado.id));
+            const facturasMecanico = listaFacturas.filter(f => String(f.mecanico_id) === String(empleado.id));
 
-            const vehiculoIdsDelMecanico = new Set(ordenesMecanico.map(o => o.vehiculo_id));
-            const clienteIdsDelMecanico = new Set(
-                ordenesMecanico.map(o => o.cliente_id || getVehiculoObj(o.vehiculo_id)?.cliente_id).filter(Boolean)
-            );
+            const docsMap: DocumentoHistorial[] = [];
 
-            // 2. Filtrar Presupuestos asociados directamente al mecánico o a sus vehículos/clientes
-            const presupuestosMecanico = presupuestosData.filter(
-                p => p.mecanico_id === empleado.id || p.mecanico?.id === empleado.id || vehiculoIdsDelMecanico.has(p.vehiculo_id) || clienteIdsDelMecanico.has(p.cliente_id)
-            );
-
-            // 3. Filtrar Facturas asociadas directamente al mecánico o a sus vehículos/clientes
-            const facturasMecanico = facturasData.filter(
-                f => f.mecanico_id === empleado.id || f.mecanico?.id === empleado.id || vehiculoIdsDelMecanico.has(f.vehiculo_id) || clienteIdsDelMecanico.has(f.cliente_id)
-            );
-
-            const listaConsolidada: DocumentoHistorial[] = [];
-
-            // A. Procesar Órdenes
             ordenesMecanico.forEach(o => {
                 const vehiculo = getVehiculoObj(o.vehiculo_id);
                 const cliente = getClienteObj(o.cliente_id, o.vehiculo_id);
-                const esCerrado = o.estado === 'Entregado';
-                const fechaObj = new Date(o.fecha_ingreso);
+                const fecha = new Date(o.fecha_ingreso);
+                const esCerrado = o.estado === 'Entregado' || o.estado === 'Cancelado';
 
-                listaConsolidada.push({
-                    idKey: `orden_${o.id}`,
+                docsMap.push({
+                    idKey: `ORD-${o.id}`,
                     id: o.id,
                     tipo: 'Orden de Trabajo',
-                    referencia: `#${o.id.toString().padStart(4, '0')}`,
-                    fecha: fechaObj,
-                    fechaStr: fechaObj.toLocaleDateString(),
-                    clienteNombre: cliente?.nombre || 'Sin Cliente',
-                    vehiculoInfo: vehiculo ? `${vehiculo.patente} (${vehiculo.marca} ${vehiculo.modelo})` : 'Desconocido',
+                    referencia: `OT #${String(o.id).slice(0, 8)} - ${o.descripcion_falla || 'Sin detalle'}`,
+                    fecha,
+                    fechaStr: fecha.toLocaleDateString(),
+                    clienteNombre: cliente ? cliente.nombre : 'Cliente Desconocido',
+                    vehiculoInfo: vehiculo ? `${vehiculo.patente} (${vehiculo.marca} ${vehiculo.modelo})` : 'Sin Vehículo',
                     estado: o.estado,
                     esCerrado,
                     montoTotal: o.total || 0
                 });
             });
 
-            // B. Procesar Presupuestos
             presupuestosMecanico.forEach(p => {
                 const vehiculo = getVehiculoObj(p.vehiculo_id);
                 const cliente = getClienteObj(p.cliente_id, p.vehiculo_id);
+                const fecha = new Date(p.fecha_creacion);
                 const esCerrado = p.estado === 'Aprobado' || p.estado === 'Rechazado';
-                const fechaObj = new Date(p.fecha_creacion);
 
-                listaConsolidada.push({
-                    idKey: `presupuesto_${p.id}`,
+                docsMap.push({
+                    idKey: `PRES-${p.id}`,
                     id: p.id,
                     tipo: 'Presupuesto',
-                    referencia: `Cotización #${p.id.toString().padStart(4, '0')}`,
-                    fecha: fechaObj,
-                    fechaStr: fechaObj.toLocaleDateString(),
-                    clienteNombre: cliente?.nombre || 'Sin Cliente',
-                    vehiculoInfo: vehiculo ? `${vehiculo.patente} (${vehiculo.marca} ${vehiculo.modelo})` : 'Desconocido',
+                    referencia: `Presupuesto #${String(p.id).slice(0, 8)} - Validez: ${p.validez_dias || '15 días'}`,
+                    fecha,
+                    fechaStr: fecha.toLocaleDateString(),
+                    clienteNombre: cliente ? cliente.nombre : 'Cliente Desconocido',
+                    vehiculoInfo: vehiculo ? `${vehiculo.patente} (${vehiculo.marca} ${vehiculo.modelo})` : 'Sin Vehículo',
                     estado: p.estado,
                     esCerrado,
                     montoTotal: p.total || 0
                 });
             });
 
-            // C. Procesar Facturas
             facturasMecanico.forEach(f => {
                 const vehiculo = getVehiculoObj(f.vehiculo_id);
                 const cliente = getClienteObj(f.cliente_id, f.vehiculo_id);
-                const fechaObj = new Date(f.fecha_emision);
-                const ptoVenta = String(f.punto_venta || 1).padStart(5, '0');
-                const nroComp = String(f.numero_comprobante || 1).padStart(8, '0');
+                const fecha = new Date(f.fecha_emision);
 
-                listaConsolidada.push({
-                    idKey: `factura_${f.id}`,
+                docsMap.push({
+                    idKey: `FAC-${f.id}`,
                     id: f.id,
                     tipo: 'Factura',
-                    referencia: `${f.tipo_comprobante} ${ptoVenta}-${nroComp}`,
-                    fecha: fechaObj,
-                    fechaStr: fechaObj.toLocaleDateString(),
-                    clienteNombre: cliente?.nombre || 'Sin Cliente',
-                    vehiculoInfo: vehiculo ? `${vehiculo.patente} (${vehiculo.marca} ${vehiculo.modelo})` : 'Desconocido',
-                    estado: 'Emitido',
+                    referencia: `${f.tipo_comprobante || 'Comprobante'} Nº ${f.punto_venta}-${f.numero_comprobante}`,
+                    fecha,
+                    fechaStr: fecha.toLocaleDateString(),
+                    clienteNombre: cliente ? cliente.nombre : 'Cliente Desconocido',
+                    vehiculoInfo: vehiculo ? `${vehiculo.patente} (${vehiculo.marca} ${vehiculo.modelo})` : 'Sin Vehículo',
+                    estado: 'Emitida',
                     esCerrado: true,
                     montoTotal: f.total || 0
                 });
             });
 
-            // Ordenar de más reciente a más antigua
-            listaConsolidada.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
-
-            setDocumentos(listaConsolidada);
+            docsMap.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
+            setDocumentos(docsMap);
 
         } catch (error) {
-            console.error("Error al cargar historial del empleado:", error);
+            console.error("Error al cargar el historial del empleado:", error);
         } finally {
             setCargando(false);
         }
     };
 
-    // Filtrado por texto, estado y tipo
-    const documentosFiltrados = documentos.filter(doc => {
-        // 1. Filtro por Estado (Activo vs Cerrado)
+    const docsFiltrados = documentos.filter(doc => {
+        const term = busqueda.toLowerCase();
+        const coincideBusqueda =
+            String(doc.id).toLowerCase().includes(term) ||
+            doc.referencia.toLowerCase().includes(term) ||
+            doc.clienteNombre.toLowerCase().includes(term) ||
+            doc.vehiculoInfo.toLowerCase().includes(term) ||
+            doc.estado.toLowerCase().includes(term);
+
+        if (!coincideBusqueda) return false;
+
         if (filtroEstado === 'Activo' && doc.esCerrado) return false;
         if (filtroEstado === 'Cerrado' && !doc.esCerrado) return false;
 
-        // 2. Filtro por Tipo de Documento
         if (filtroTipo === 'Orden' && doc.tipo !== 'Orden de Trabajo') return false;
         if (filtroTipo === 'Presupuesto' && doc.tipo !== 'Presupuesto') return false;
         if (filtroTipo === 'Factura' && doc.tipo !== 'Factura') return false;
 
-        // 3. Buscador por Texto
-        const termino = busqueda.toLowerCase().trim();
-        if (!termino) return true;
-
-        const matchTipo = doc.tipo.toLowerCase().includes(termino);
-        const matchRef = doc.referencia.toLowerCase().includes(termino);
-        const matchCliente = doc.clienteNombre.toLowerCase().includes(termino);
-        const matchVehiculo = doc.vehiculoInfo.toLowerCase().includes(termino);
-        const matchEstado = doc.estado.toLowerCase().includes(termino);
-        const matchFecha = doc.fechaStr.includes(termino);
-
-        return matchTipo || matchRef || matchCliente || matchVehiculo || matchEstado || matchFecha;
+        return true;
     });
 
-    const totalRegistros = documentos.length;
-    const totalActivos = documentos.filter(d => !d.esCerrado).length;
-    const totalCerrados = documentos.filter(d => d.esCerrado).length;
-    const montoAcumulado = documentos.reduce((sum, d) => sum + d.montoTotal, 0);
-
-    const getEstadoBadge = (doc: DocumentoHistorial) => {
-        if (doc.tipo === 'Factura') {
-            return <Badge bg="dark">Comprobante Emitido</Badge>;
+    const getBadgeVariant = (doc: DocumentoHistorial) => {
+        if (doc.tipo === 'Orden de Trabajo') {
+            if (doc.estado === 'Entregado') return 'dark';
+            if (doc.estado === 'Listo para Entregar') return 'success';
+            if (doc.estado === 'En Reparación') return 'warning';
+            return 'info';
         }
         if (doc.tipo === 'Presupuesto') {
-            if (doc.estado === 'Aprobado') return <Badge bg="success">Aprobado</Badge>;
-            if (doc.estado === 'Rechazado') return <Badge bg="danger">Rechazado</Badge>;
-            return <Badge bg="warning" text="dark">Cotizado</Badge>;
+            if (doc.estado === 'Aprobado') return 'success';
+            if (doc.estado === 'Rechazado') return 'danger';
+            return 'primary';
         }
-        // Orden de Trabajo
-        switch (doc.estado) {
-            case 'Ingresado':
-            case 'Pendiente': return <Badge bg="warning" text="dark">Ingresado</Badge>;
-            case 'En Reparación':
-            case 'En Taller': return <Badge bg="primary">En Reparación</Badge>;
-            case 'Listo para Entregar':
-            case 'Terminado': return <Badge bg="success">Listo p/ Entregar</Badge>;
-            case 'Entregado': return <Badge bg="secondary">Entregado</Badge>;
-            default: return <Badge bg="secondary">{doc.estado}</Badge>;
-        }
-    };
-
-    const getTipoBadge = (tipo: DocumentoHistorial['tipo']) => {
-        switch (tipo) {
-            case 'Orden de Trabajo': return <Badge bg="primary">Orden de Trabajo</Badge>;
-            case 'Presupuesto': return <Badge bg="info" text="dark">Presupuesto</Badge>;
-            case 'Factura': return <Badge bg="dark">Factura</Badge>;
-        }
+        return 'success';
     };
 
     return (
-        <Modal show={show} onHide={handleClose} size="xl" centered>
+        <Modal show={show} onHide={handleClose} size="xl" centered backdrop="static">
             <Modal.Header closeButton className="bg-light">
-                <Modal.Title className="fw-bold">
-                    Historial de Trabajo: {empleado?.nombre} <small className="text-muted">({empleado?.rol})</small>
+                <Modal.Title>
+                    Historial de Trabajo de <span className="text-primary">{empleado?.nombre}</span>
                 </Modal.Title>
             </Modal.Header>
-            <Modal.Body className="p-4">
 
-                {/* Resumen de Métrica del Empleado */}
-                <Row className="mb-4">
-                    <Col md={3}>
-                        <Card className="shadow-sm border-primary text-center">
-                            <Card.Body className="py-2">
-                                <small className="text-muted text-uppercase fw-bold">Total Trabajos</small>
-                                <h4 className="fw-bold text-primary my-1">{totalRegistros}</h4>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col md={3}>
-                        <Card className="shadow-sm border-warning text-center">
-                            <Card.Body className="py-2">
-                                <small className="text-muted text-uppercase fw-bold">En Curso (Activos)</small>
-                                <h4 className="fw-bold text-warning my-1">{totalActivos}</h4>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col md={3}>
-                        <Card className="shadow-sm border-secondary text-center">
-                            <Card.Body className="py-2">
-                                <small className="text-muted text-uppercase fw-bold">Finalizados (Cerrados)</small>
-                                <h4 className="fw-bold text-secondary my-1">{totalCerrados}</h4>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col md={3}>
-                        <Card className="shadow-sm border-success text-center">
-                            <Card.Body className="py-2">
-                                <small className="text-muted text-uppercase fw-bold">Total Monetario</small>
-                                <h4 className="fw-bold text-success my-1">${montoAcumulado.toLocaleString()}</h4>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                </Row>
-
-                {/* Filtros y Buscador */}
-                <Row className="mb-3 align-items-center">
-                    <Col md={5}>
-                        <InputGroup>
-                            <InputGroup.Text>Buscar</InputGroup.Text>
-                            <Form.Control
-                                type="text"
-                                placeholder="Referencia, cliente, vehículo o estado..."
-                                value={busqueda}
-                                onChange={(e) => setBusqueda(e.target.value)}
-                            />
-                        </InputGroup>
-                    </Col>
-
-                    <Col md={7} className="d-flex justify-content-end gap-2">
-                        <Form.Select
-                            style={{ width: '180px' }}
-                            value={filtroEstado}
-                            onChange={(e: any) => setFiltroEstado(e.target.value)}
-                        >
-                            <option value="Todos">Estado: Todos</option>
-                            <option value="Activo">Solo En Curso / Activos</option>
-                            <option value="Cerrado">Solo Cerrados / Finalizados</option>
-                        </Form.Select>
-
-                        <Form.Select
-                            style={{ width: '180px' }}
-                            value={filtroTipo}
-                            onChange={(e: any) => setFiltroTipo(e.target.value)}
-                        >
-                            <option value="Todos">Tipo: Todos</option>
-                            <option value="Orden">Solo Órdenes de Trabajo</option>
-                            <option value="Presupuesto">Solo Presupuestos</option>
-                            <option value="Factura">Solo Facturas</option>
-                        </Form.Select>
-                    </Col>
-                </Row>
-
-                {/* Tabla de Documentos Históricos */}
+            <Modal.Body style={{ minHeight: '60vh', maxHeight: '75vh', overflowY: 'auto' }}>
                 {cargando ? (
-                    <div className="d-flex justify-content-center align-items-center py-5">
-                        <Spinner animation="border" variant="primary" className="me-2" />
-                        <span>Cargando historial de trabajo...</span>
+                    <div className="text-center py-5">
+                        <Spinner animation="border" variant="primary" />
+                        <p className="mt-3 text-muted">Cargando intervenciones del empleado...</p>
                     </div>
                 ) : (
-                    <Table striped hover responsive className="align-middle mb-0">
-                        <thead className="table-dark">
-                            <tr>
-                                <th>Tipo</th>
-                                <th>Referencia</th>
-                                <th>Fecha</th>
-                                <th>Cliente</th>
-                                <th>Vehículo</th>
-                                <th>Estado</th>
-                                <th className="text-end">Monto Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {documentosFiltrados.length === 0 ? (
+                    <>
+                        <Card className="mb-3 border-0 bg-light shadow-sm">
+                            <Card.Body>
+                                <Row className="g-2">
+                                    <Col md={5}>
+                                        <InputGroup>
+                                            <InputGroup.Text>Buscar</InputGroup.Text>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="Nº, cliente, patente, trabajo..."
+                                                value={busqueda}
+                                                onChange={(e) => setBusqueda(e.target.value)}
+                                            />
+                                        </InputGroup>
+                                    </Col>
+                                    <Col md={3}>
+                                        <Form.Select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value as any)}>
+                                            <option value="Todos">Todos los Documentos</option>
+                                            <option value="Orden">Órdenes de Trabajo</option>
+                                            <option value="Presupuesto">Presupuestos</option>
+                                            <option value="Factura">Facturas</option>
+                                        </Form.Select>
+                                    </Col>
+                                    <Col md={4}>
+                                        <Form.Select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as any)}>
+                                            <option value="Todos">Todos los Estados (Activos y Cerrados)</option>
+                                            <option value="Activo">Solo Trabajos Activos / En Curso</option>
+                                            <option value="Cerrado">Solo Archivados / Completados</option>
+                                        </Form.Select>
+                                    </Col>
+                                </Row>
+                            </Card.Body>
+                        </Card>
+
+                        <Table striped hover responsive className="align-middle mb-0">
+                            <thead className="table-dark">
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4 text-muted">
-                                        No se encontraron registros de trabajo para los criterios seleccionados.
-                                    </td>
+                                    <th>Tipo</th>
+                                    <th>Fecha</th>
+                                    <th>Detalle / Referencia</th>
+                                    <th>Cliente</th>
+                                    <th>Vehículo</th>
+                                    <th>Estado</th>
+                                    <th className="text-end">Monto Total</th>
                                 </tr>
-                            ) : (
-                                documentosFiltrados.map((doc) => (
-                                    <tr key={doc.idKey}>
-                                        <td>{getTipoBadge(doc.tipo)}</td>
-                                        <td className="fw-bold">{doc.referencia}</td>
-                                        <td>{doc.fechaStr}</td>
-                                        <td className="fw-semibold">{doc.clienteNombre}</td>
-                                        <td>{doc.vehiculoInfo}</td>
-                                        <td>{getEstadoBadge(doc)}</td>
-                                        <td className="text-end fw-bold text-success">
-                                            ${doc.montoTotal.toLocaleString()}
+                            </thead>
+                            <tbody>
+                                {docsFiltrados.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="text-center py-4 text-muted">
+                                            No se encontraron registros de trabajo asignados a este empleado.
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </Table>
+                                ) : (
+                                    docsFiltrados.map((doc) => (
+                                        <tr key={doc.idKey}>
+                                            <td className="fw-bold">{doc.tipo}</td>
+                                            <td>{doc.fechaStr}</td>
+                                            <td>{doc.referencia}</td>
+                                            <td>{doc.clienteNombre}</td>
+                                            <td><code>{doc.vehiculoInfo}</code></td>
+                                            <td>
+                                                <Badge bg={getBadgeVariant(doc)}>
+                                                    {doc.estado}
+                                                </Badge>
+                                            </td>
+                                            <td className="text-end fw-bold">
+                                                ${doc.montoTotal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </Table>
+                    </>
                 )}
             </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={handleClose}>Cerrar</Button>
+
+            <Modal.Footer className="bg-light">
+                <Button variant="secondary" onClick={handleClose}>
+                    Cerrar
+                </Button>
             </Modal.Footer>
         </Modal>
     );

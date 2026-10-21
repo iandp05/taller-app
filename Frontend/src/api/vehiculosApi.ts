@@ -11,7 +11,7 @@ export const getVehiculos = async (): Promise<Vehiculo[]> => {
     }
 };
 
-export const getVehiculoById = async (id: number): Promise<Vehiculo> => {
+export const getVehiculoById = async (id: string | number): Promise<Vehiculo> => {
     const response = await api.get<Vehiculo>(`/vehiculos/${id}`);
     return response.data;
 };
@@ -21,12 +21,12 @@ export const createVehiculo = async (vehiculo: VehiculoCreate): Promise<Vehiculo
     return response.data;
 };
 
-export const updateVehiculo = async (id: number, vehiculo: Partial<VehiculoCreate>): Promise<Vehiculo> => {
+export const updateVehiculo = async (id: string | number, vehiculo: Partial<VehiculoCreate>): Promise<Vehiculo> => {
     const response = await api.put<Vehiculo>(`/vehiculos/${id}`, vehiculo);
     return response.data;
 };
 
-export const deleteVehiculo = async (id: number): Promise<void> => {
+export const deleteVehiculo = async (id: string | number): Promise<void> => {
     await api.delete(`/vehiculos/${id}`);
 };
 

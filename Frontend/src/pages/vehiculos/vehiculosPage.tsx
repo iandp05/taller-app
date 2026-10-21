@@ -12,7 +12,7 @@ export default function VehiculosPage() {
     const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<Vehiculo | null>(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [idVehiculoAEliminar, setIdVehiculoAEliminar] = useState<number | null>(null);
+    const [idVehiculoAEliminar, setIdVehiculoAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const [busqueda, setBusqueda] = useState('');
@@ -22,10 +22,10 @@ export default function VehiculosPage() {
     const cargarVehiculos = async () => {
         try {
             const data = await getVehiculos();
-            // Aseguramos que data sea un array válido, por si falla la red
             setVehiculos(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error al obtener vehículos:", error);
+            setVehiculos([]);
         }
     };
 
@@ -37,14 +37,12 @@ export default function VehiculosPage() {
         setPaginaActual(1);
     }, [busqueda]);
 
-    // BLINDAJE DE SEGURIDAD: Evita pantalla en blanco si marca, modelo o patente son undefined
-    const vehiculosFiltrados = vehiculos.filter(v => {
-        const termino = busqueda.toLowerCase();
-        const pat = v.patente ? v.patente.toLowerCase() : '';
-        const mar = v.marca ? v.marca.toLowerCase() : '';
-        const mod = v.modelo ? v.modelo.toLowerCase() : '';
-        return pat.includes(termino) || mar.includes(termino) || mod.includes(termino);
-    });
+    const listaVehiculos = Array.isArray(vehiculos) ? vehiculos : [];
+    const vehiculosFiltrados = listaVehiculos.filter(v =>
+        (v.patente && v.patente.toLowerCase().includes(busqueda.toLowerCase())) ||
+        (v.marca && v.marca.toLowerCase().includes(busqueda.toLowerCase())) ||
+        (v.modelo && v.modelo.toLowerCase().includes(busqueda.toLowerCase()))
+    );
 
     const indiceUltimoItem = paginaActual * itemsPorPagina;
     const indicePrimerItem = indiceUltimoItem - itemsPorPagina;
@@ -54,12 +52,11 @@ export default function VehiculosPage() {
     const handleNuevoVehiculo = () => { setVehiculoSeleccionado(null); setShowModal(true); };
     const handleEditarVehiculo = (vehiculo: Vehiculo) => { setVehiculoSeleccionado(vehiculo); setShowModal(true); };
     
-    const handleEliminarVehiculoClick = (id: number) => {
+    const handleEliminarVehiculoClick = (id: string | number) => {
         setIdVehiculoAEliminar(id);
         setShowConfirmModal(true);
     };
 
-    // BLINDAJE DE ERRORES: Muestra el mensaje exacto que manda FastAPI (Ej: "Está atado a una orden")
     const handleConfirmarEliminacion = async () => {
         if (idVehiculoAEliminar === null) return;
 
@@ -68,11 +65,9 @@ export default function VehiculosPage() {
             setShowConfirmModal(false);
             setIdVehiculoAEliminar(null);
             cargarVehiculos();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error al eliminar:", error);
-            const mensajeError = error.response?.data?.detail || "No se pudo eliminar el vehículo.";
-            setErrorMsg(mensajeError);
-            setShowConfirmModal(false);
+            setErrorMsg("No se pudo eliminar el vehículo porque está vinculado a órdenes o comprobantes.");
         }
     };
 
@@ -80,9 +75,9 @@ export default function VehiculosPage() {
         <div>
             {errorMsg && <Alert variant="danger" dismissible onClose={() => setErrorMsg(null)} className="mb-3">{errorMsg}</Alert>}
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 mb-md-4">
-                <h2 className="mb-0">Directorio de Vehículos</h2>
+                <h2 className="mb-0">Gestión de Vehículos</h2>
                 <Button variant="success" onClick={handleNuevoVehiculo} className="w-100 w-sm-auto">
-                    Registrar Vehículo
+                    Nuevo Vehículo
                 </Button>
             </div>
 
@@ -108,7 +103,7 @@ export default function VehiculosPage() {
                                 <th>Patente</th>
                                 <th>Marca y Modelo</th>
                                 <th>Año</th>
-                                <th>VIN / Chasis</th>
+                                <th>Propietario</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -122,10 +117,10 @@ export default function VehiculosPage() {
                             ) : (
                                 vehiculosPaginados.map((vehiculo) => (
                                     <tr key={vehiculo.id}>
-                                        <td className="fw-bold text-uppercase">{vehiculo.patente || '---'}</td>
-                                        <td className="text-capitalize">{vehiculo.marca || '---'} {vehiculo.modelo || ''}</td>
-                                        <td>{vehiculo.anio || '---'}</td>
-                                        <td className="text-uppercase">{vehiculo.vin || '---'}</td>
+                                        <td className="fw-bold">{vehiculo.patente}</td>
+                                        <td>{vehiculo.marca} {vehiculo.modelo}</td>
+                                        <td>{vehiculo.anio || '-'}</td>
+                                        <td>{String(vehiculo.cliente_id).slice(0, 8)}</td>
                                         <td>
                                             <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleEditarVehiculo(vehiculo)}>Editar</Button>
                                             <Button variant="outline-danger" size="sm" onClick={() => handleEliminarVehiculoClick(vehiculo.id)}>Eliminar</Button>
@@ -152,12 +147,7 @@ export default function VehiculosPage() {
                 </Card.Body>
             </Card>
 
-            <VehiculoModal 
-                show={showModal} 
-                handleClose={() => setShowModal(false)} 
-                onVehiculoSaved={cargarVehiculos} 
-                vehiculoEditando={vehiculoSeleccionado} 
-            />
+            <VehiculoModal show={showModal} handleClose={() => setShowModal(false)} onVehiculoSaved={cargarVehiculos} vehiculoEditando={vehiculoSeleccionado} />
 
             <ConfirmModal
                 show={showConfirmModal}

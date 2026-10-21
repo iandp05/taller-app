@@ -23,14 +23,14 @@ def leer_usuarios(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
     return services.get_usuarios(db, skip=skip, limit=limit)
 
 @router.get("/{usuario_id}", response_model=schemas.UsuarioResponse)
-def leer_usuario(usuario_id: int, db: Session = Depends(get_db)):
+def leer_usuario(usuario_id: str, db: Session = Depends(get_db)):
     db_usuario = services.get_usuario(db, usuario_id=usuario_id)
     if db_usuario is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return db_usuario
 
 @router.put("/{usuario_id}", response_model=schemas.UsuarioResponse)
-def actualizar_usuario(usuario_id: int, usuario_data: schemas.UsuarioUpdate, db: Session = Depends(get_db)):
+def actualizar_usuario(usuario_id: str, usuario_data: schemas.UsuarioUpdate, db: Session = Depends(get_db)):
     if usuario_data.username:
         db_existente = services.get_usuario_por_username(db, username=usuario_data.username)
         if db_existente and db_existente.id != usuario_id:
@@ -42,7 +42,7 @@ def actualizar_usuario(usuario_id: int, usuario_data: schemas.UsuarioUpdate, db:
     return db_usuario
 
 @router.delete("/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
-def eliminar_usuario(usuario_id: int, db: Session = Depends(get_db)):
+def eliminar_usuario(usuario_id: str, db: Session = Depends(get_db)):
     try:
         db_usuario = services.delete_usuario(db, usuario_id=usuario_id)
         if db_usuario is None:
@@ -65,11 +65,11 @@ def login_usuario(credenciales: schemas.UsuarioLogin, db: Session = Depends(get_
         )
         
     access_token = services.create_access_token(
-        data={"sub": usuario.username, "id": usuario.id, "rol": usuario.rol}
+        data={"sub": usuario.username, "id": str(usuario.id), "rol": usuario.rol}
     )
 
     return {
-        "id": usuario.id,
+        "id": str(usuario.id),
         "nombre": usuario.nombre,
         "username": usuario.username,
         "rol": usuario.rol,

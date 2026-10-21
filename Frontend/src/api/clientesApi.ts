@@ -11,7 +11,7 @@ export const getClientes = async (): Promise<Cliente[]> => {
     }
 };
 
-export const getClienteById = async (id: number): Promise<Cliente> => {
+export const getClienteById = async (id: string | number): Promise<Cliente> => {
     const response = await api.get<Cliente>(`/clientes/${id}`);
     return response.data;
 };
@@ -21,11 +21,11 @@ export const createCliente = async (cliente: ClienteCreate): Promise<Cliente> =>
     return response.data;
 };
 
-export const updateCliente = async (id: number, cliente: Partial<ClienteCreate>): Promise<Cliente> => {
+export const updateCliente = async (id: string | number, cliente: Partial<ClienteCreate>): Promise<Cliente> => {
     const response = await api.put<Cliente>(`/clientes/${id}`, cliente);
     return response.data;
 };
 
-export const deleteCliente = async (id: number): Promise<void> => {
+export const deleteCliente = async (id: string | number): Promise<void> => {
     await api.delete(`/clientes/${id}`);
 };

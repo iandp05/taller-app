@@ -12,7 +12,7 @@ export default function ClientesPage() {
     const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [idClienteAEliminar, setIdClienteAEliminar] = useState<number | null>(null);
+    const [idClienteAEliminar, setIdClienteAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const [busqueda, setBusqueda] = useState('');
@@ -37,7 +37,6 @@ export default function ClientesPage() {
         setPaginaActual(1);
     }, [busqueda]);
 
-    // Filtrado blindado contra nulos
     const listaClientes = Array.isArray(clientes) ? clientes : [];
     const clientesFiltrados = listaClientes.filter(c =>
         (c.nombre && c.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
@@ -45,7 +44,6 @@ export default function ClientesPage() {
         (c.email && c.email.toLowerCase().includes(busqueda.toLowerCase()))
     );
 
-    // Paginación blindada
     const indiceUltimoItem = paginaActual * itemsPorPagina;
     const indicePrimerItem = indiceUltimoItem - itemsPorPagina;
     const clientesPaginados = clientesFiltrados.slice(indicePrimerItem, indiceUltimoItem);
@@ -54,7 +52,7 @@ export default function ClientesPage() {
     const handleNuevoCliente = () => { setClienteSeleccionado(null); setShowModal(true); };
     const handleEditarCliente = (cliente: Cliente) => { setClienteSeleccionado(cliente); setShowModal(true); };
     
-    const handleEliminarClienteClick = (id: number) => {
+    const handleEliminarClienteClick = (id: string | number) => {
         setIdClienteAEliminar(id);
         setShowConfirmModal(true);
     };
@@ -119,7 +117,7 @@ export default function ClientesPage() {
                             ) : (
                                 clientesPaginados.map((cliente) => (
                                     <tr key={cliente.id}>
-                                        <td>{cliente.id}</td>
+                                        <td>{String(cliente.id).slice(0, 8)}</td>
                                         <td className="fw-bold">{cliente.nombre}</td>
                                         <td>{cliente.telefono}</td>
                                         <td>{cliente.email || '-'}</td>

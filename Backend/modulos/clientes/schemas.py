@@ -1,3 +1,4 @@
+# backend/modulos/clientes/schemas.py
 import re
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
@@ -21,7 +22,7 @@ def validar_cuit_dni(val: Optional[str]) -> Optional[str]:
     if not c:
         return None
     if len(c) in (7, 8):
-        return c  # DNI válido
+        return c
     elif len(c) == 11:
         mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2]
         s = sum(int(c[i]) * mult[i] for i in range(10))
@@ -33,7 +34,6 @@ def validar_cuit_dni(val: Optional[str]) -> Optional[str]:
     else:
         raise ValueError("Debe ingresar un CUIT válido (11 dígitos) o un DNI (7 u 8 dígitos).")
 
-# 1. Esquema Base (Para respuestas sin ejecutar validaciones estrictas sobre BDD existente)
 class ClienteBase(BaseModel):
     nombre: str = Field(..., min_length=2, max_length=150, description="Nombre o Razón Social del cliente")
     telefono: str = Field(..., min_length=1, max_length=30, description="Teléfono de contacto")
@@ -42,7 +42,6 @@ class ClienteBase(BaseModel):
     domicilio: Optional[str] = Field(None, max_length=200, description="Domicilio comercial")
     condicion_iva: Optional[str] = Field("Consumidor Final", max_length=50)
 
-# 2. Esquema para CREAR (POST) - Aplica validaciones estrictas en la entrada
 class ClienteCreate(ClienteBase):
     @field_validator("email", mode="before")
     @classmethod
@@ -61,7 +60,6 @@ class ClienteCreate(ClienteBase):
             raise ValueError("El teléfono no puede estar vacío.")
         return str(v).strip()
 
-# 3. Esquema para ACTUALIZAR (PUT/PATCH)
 class ClienteUpdate(BaseModel):
     nombre: Optional[str] = Field(None, min_length=2, max_length=150)
     telefono: Optional[str] = Field(None, min_length=1, max_length=30)
@@ -87,14 +85,12 @@ class ClienteUpdate(BaseModel):
             raise ValueError("El teléfono no puede estar vacío.")
         return str(v).strip() if v is not None else None
 
-# 4. Esquema de RESPUESTA NORMAL (GET)
 class ClienteResponse(ClienteBase):
-    id: int
+    id: str
 
     class Config:
         from_attributes = True
 
-# 5. Esquema de RESPUESTA DETALLADA (GET)
 class ClienteDetalleResponse(ClienteResponse):
     vehiculos: List[VehiculoResponse] = []
 

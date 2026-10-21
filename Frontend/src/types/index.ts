@@ -2,7 +2,7 @@
 
 // --- USUARIOS ---
 export interface Usuario {
-    id: number;
+    id: string | number;
     nombre: string;
     username: string;
     rol: string;
@@ -17,7 +17,7 @@ export interface UsuarioCreate {
 
 // --- CLIENTES ---
 export interface Cliente {
-    id: number;
+    id: string | number;
     nombre: string;
     telefono: string;
     email?: string | null;
@@ -38,13 +38,13 @@ export interface ClienteCreate {
 
 // --- VEHÍCULOS ---
 export interface Vehiculo {
-    id: number;
+    id: string | number;
     patente: string;
     marca: string;
     modelo: string;
     anio: number;
     vin?: string | null;
-    cliente_id: number;
+    cliente_id: string | number;
 }
 
 export interface VehiculoCreate {
@@ -53,12 +53,12 @@ export interface VehiculoCreate {
     modelo: string;
     anio: number;
     vin?: string;
-    cliente_id: number;
+    cliente_id: string | number;
 }
 
 // --- INVENTARIO ---
 export interface Producto {
-    id: number;
+    id: string | number;
     nombre: string;
     codigo?: string | null;
     categoria: string;
@@ -78,23 +78,23 @@ export interface ProductoCreate {
 
 // --- ÓRDENES DE TRABAJO ---
 export interface DetalleOrden {
-    id: number;
-    producto_id: number;
+    id: string | number;
+    producto_id: string | number;
     cantidad: number;
     precio_unitario: number;
 }
 
 export interface DetalleOrdenCreate {
-    producto_id: number;
+    producto_id: string | number;
     cantidad: number;
 }
 
 export interface OrdenTrabajo {
-    id: number;
-    vehiculo_id: number;
-    mecanico_id: number;
+    id: string | number;
+    vehiculo_id: string | number;
+    mecanico_id: string | number;
     mecanico?: Usuario; 
-    cliente_id?: number;
+    cliente_id?: string | number;
     cliente?: Cliente;
     fecha_ingreso: string;
     estado: string;
@@ -112,8 +112,8 @@ export interface OrdenTrabajo {
 export type Planilla = OrdenTrabajo;
 
 export interface OrdenCreate {
-    vehiculo_id: number;
-    mecanico_id?: number;
+    vehiculo_id: string | number;
+    mecanico_id?: string | number;
     descripcion_falla: string;
     estado?: string;
     costo_mano_obra?: number;
@@ -127,25 +127,25 @@ export interface OrdenCreate {
 
 // --- PRESUPUESTOS ---
 export interface DetallePresupuesto {
-    id: number;
-    producto_id?: number | null;
+    id: string | number;
+    producto_id?: string | number | null;
     descripcion: string;
     cantidad: number;
     precio_unitario: number;
 }
 
 export interface DetallePresupuestoCreate {
-    producto_id?: number | null;
+    producto_id?: string | number | null;
     descripcion: string;
     cantidad: number;
     precio_unitario: number;
 }
 
 export interface Presupuesto {
-    id: number;
-    vehiculo_id: number;
-    cliente_id: number;
-    mecanico_id?: number | null;
+    id: string | number;
+    vehiculo_id: string | number;
+    cliente_id: string | number;
+    mecanico_id?: string | number | null;
     fecha_creacion: string;
     estado: string;
     validez_dias: string;
@@ -158,9 +158,9 @@ export interface Presupuesto {
 }
 
 export interface PresupuestoCreate {
-    vehiculo_id: number;
-    cliente_id: number;
-    mecanico_id?: number;
+    vehiculo_id: string | number;
+    cliente_id: string | number;
+    mecanico_id?: string | number;
     estado?: string;
     validez_dias?: string;
     condiciones_pago?: string;
@@ -169,8 +169,8 @@ export interface PresupuestoCreate {
 
 // --- FACTURACIÓN Y REMITOS ---
 export interface DetalleFactura {
-    id: number;
-    producto_id?: number | null;
+    id: string | number;
+    producto_id?: string | number | null;
     descripcion: string;
     cantidad: number;
     precio_unitario: number;
@@ -179,7 +179,7 @@ export interface DetalleFactura {
 }
 
 export interface DetalleFacturaCreate {
-    producto_id?: number | null;
+    producto_id?: string | number | null;
     descripcion: string;
     cantidad: number;
     precio_unitario: number;
@@ -187,11 +187,11 @@ export interface DetalleFacturaCreate {
 }
 
 export interface Factura {
-    id: number;
-    vehiculo_id: number;
-    cliente_id: number;
-    mecanico_id?: number | null;
-    tipo_comprobante: string; // "Factura A", "Factura B", "Remito"
+    id: string | number;
+    vehiculo_id: string | number;
+    cliente_id: string | number;
+    mecanico_id?: string | number | null;
+    tipo_comprobante: string;
     punto_venta: string;
     numero_comprobante: number;
     cae?: string | null;
@@ -208,9 +208,9 @@ export interface Factura {
 }
 
 export interface FacturaCreate {
-    vehiculo_id: number;
-    cliente_id: number;
-    mecanico_id?: number;
+    vehiculo_id: string | number;
+    cliente_id: string | number;
+    mecanico_id?: string | number;
     tipo_comprobante: string;
     punto_venta: string;
     numero_comprobante: number;
@@ -222,7 +222,7 @@ export interface FacturaCreate {
 
 // --- CONFIGURACIÓN TALLER ---
 export interface ConfiguracionTaller {
-    id?: number;
+    id?: string | number;
     nombre_comercial: string;
     razon_social: string;
     cuit: string;

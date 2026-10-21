@@ -17,14 +17,14 @@ def leer_facturas(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
     return services.get_facturas(db, skip=skip, limit=limit)
 
 @router.get("/{factura_id}", response_model=schemas.FacturaResponse)
-def leer_factura(factura_id: int, db: Session = Depends(get_db)):
+def leer_factura(factura_id: str, db: Session = Depends(get_db)):
     db_factura = services.get_factura(db, factura_id=factura_id)
     if db_factura is None:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     return db_factura
 
 @router.delete("/{factura_id}", status_code=status.HTTP_204_NO_CONTENT)
-def eliminar_factura(factura_id: int, reponer_stock: bool = True, db: Session = Depends(get_db)):
+def eliminar_factura(factura_id: str, reponer_stock: bool = True, db: Session = Depends(get_db)):
     db_factura = services.delete_factura(db, factura_id=factura_id, reponer_stock=reponer_stock)
     if db_factura is None:
         raise HTTPException(status_code=404, detail="Factura no encontrada")

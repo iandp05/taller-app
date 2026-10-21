@@ -16,8 +16,8 @@ interface OrdenModalProps {
 }
 
 interface OrdenFormInputs {
-    vehiculo_id: number;
-    mecanico_id: number;
+    vehiculo_id: string | number;
+    mecanico_id: string | number;
     estado: string;
     descripcion_falla: string;
     kilometros: string | number;
@@ -39,352 +39,274 @@ export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEdita
         register,
         handleSubmit,
         reset,
-        getValues,
+        watch,
         formState: { errors }
     } = useForm<OrdenFormInputs>({
         defaultValues: {
-            vehiculo_id: 0,
-            mecanico_id: 0,
-            estado: 'Ingresado',
+            vehiculo_id: '',
+            mecanico_id: '',
+            estado: 'En Recepción',
             descripcion_falla: '',
             kilometros: '',
-            nivel_combustible: '',
-            frente_stereo: false,
-            rueda_auxilio: false,
+            nivel_combustible: 'Medio',
+            frente_stereo: true,
+            rueda_auxilio: true,
             codigo_stereo: ''
         }
     });
 
-    useEffect(() => {
-        if (show) {
-            getVehiculos().then(setVehiculos).catch(console.error);
-            getUsuarios().then(setEmpleados).catch(console.error);
-            setErrorServidor('');
-        }
-    }, [show]);
+    const estadoSeleccionado = watch('estado');
 
     useEffect(() => {
-        if (ordenEditando) {
-            let estadoInicial = ordenEditando.estado;
-            if (estadoInicial === 'Pendiente') estadoInicial = 'Ingresado';
-            if (estadoInicial === 'En Taller') estadoInicial = 'En Reparación';
-            if (estadoInicial === 'Terminado') estadoInicial = 'Listo para Entregar';
-
-            reset({
-                vehiculo_id: ordenEditando.vehiculo_id,
-                mecanico_id: ordenEditando.mecanico_id || 0,
-                estado: estadoInicial,
-                descripcion_falla: ordenEditando.descripcion_falla || '',
-                kilometros: ordenEditando.kilometros !== null && ordenEditando.kilometros !== undefined ? ordenEditando.kilometros : '',
-                nivel_combustible: ordenEditando.nivel_combustible || '',
-                frente_stereo: ordenEditando.frente_stereo || false,
-                rueda_auxilio: ordenEditando.rueda_auxilio || false,
-                codigo_stereo: ordenEditando.codigo_stereo || ''
-            });
-        } else {
-            reset({
-                vehiculo_id: 0,
-                mecanico_id: 0,
-                estado: 'Ingresado',
-                descripcion_falla: '',
-                kilometros: '',
-                nivel_combustible: '',
-                frente_stereo: false,
-                rueda_auxilio: false,
-                codigo_stereo: ''
-            });
-        }
-    }, [ordenEditando, show, reset]);
-
-    const estadoHistoricoBruto = ordenEditando?.estado || 'Ingresado';
-    let estadoHistorico = estadoHistoricoBruto;
-    if (estadoHistorico === 'Pendiente') estadoHistorico = 'Ingresado';
-    if (estadoHistorico === 'En Taller') estadoHistorico = 'En Reparación';
-    if (estadoHistorico === 'Terminado') estadoHistorico = 'Listo para Entregar';
-
-    const isYaArchivado = estadoHistorico === 'Entregado';
-    const isYaTerminado = estadoHistorico === 'Listo para Entregar';
-    const isYaEnReparacion = estadoHistorico === 'En Reparación';
-
-    const disableAll = isYaArchivado; 
-    const disableIngreso = disableAll || isYaTerminado || isYaEnReparacion; 
-    const disableDesc = disableAll || isYaTerminado; 
-
-    const handleDesarchivar = async () => {
-        if (!ordenEditando) return;
-        
-        setCargando(true);
-        setErrorServidor('');
-        try {
-            await updateOrden(ordenEditando.id, { estado: 'Listo para Entregar' });
-            onOrdenSaved();
-            handleClose();
-        } catch (error: any) {
-            console.error("Error al desarchivar:", error);
-            setErrorServidor("Hubo un error al reabrir la orden de trabajo.");
-        } finally {
-            setCargando(false);
-        }
-    };
-
-    const ejecutarGuardadoOrden = async (mecanicoIdFinal: number) => {
-        if (cargando) return;
-        setCargando(true); 
-        setErrorServidor('');
-
-        const formValues = getValues();
-
-        const ordenData: OrdenCreate = {
-            vehiculo_id: Number(formValues.vehiculo_id),
-            mecanico_id: mecanicoIdFinal > 0 ? mecanicoIdFinal : undefined,
-            descripcion_falla: formValues.descripcion_falla.trim(),
-            estado: formValues.estado,
-            kilometros: formValues.kilometros !== '' ? Number(formValues.kilometros) : undefined,
-            nivel_combustible: formValues.nivel_combustible || undefined,
-            frente_stereo: formValues.frente_stereo,
-            rueda_auxilio: formValues.rueda_auxilio,
-            codigo_stereo: formValues.codigo_stereo.trim() || undefined,
-            costo_mano_obra: 0,
-            detalles: []
+        const cargarDatosModal = async () => {
+            try {
+                const [vehsRes, empsRes] = await Promise.all([
+                    getVehiculos(),
+                    getUsuarios()
+                ]);
+                setVehiculos(Array.isArray(vehsRes) ? vehsRes : []);
+                setEmpleados(Array.isArray(empsRes) ? empsRes : []);
+            } catch (err) {
+                console.error("Error al cargar datos del modal:", err);
+            }
         };
 
+        if (show) {
+            cargarDatosModal();
+            setErrorServidor('');
+
+            if (ordenEditando) {
+                reset({
+                    vehiculo_id: ordenEditando.vehiculo_id,
+                    mecanico_id: ordenEditando.mecanico_id || '',
+                    estado: ordenEditando.estado || 'En Recepción',
+                    descripcion_falla: ordenEditando.descripcion_falla || '',
+                    kilometros: ordenEditando.kilometros !== null && ordenEditando.kilometros !== undefined ? ordenEditando.kilometros : '',
+                    nivel_combustible: ordenEditando.nivel_combustible || 'Medio',
+                    frente_stereo: Boolean(ordenEditando.frente_stereo),
+                    rueda_auxilio: Boolean(ordenEditando.rueda_auxilio),
+                    codigo_stereo: ordenEditando.codigo_stereo || ''
+                });
+            } else {
+                reset({
+                    vehiculo_id: '',
+                    mecanico_id: '',
+                    estado: 'En Recepción',
+                    descripcion_falla: '',
+                    kilometros: '',
+                    nivel_combustible: 'Medio',
+                    frente_stereo: true,
+                    rueda_auxilio: true,
+                    codigo_stereo: ''
+                });
+            }
+        }
+    }, [show, ordenEditando, reset]);
+
+    const ejecutarGuardadoReal = async (data: OrdenFormInputs) => {
+        setCargando(true);
+        setErrorServidor('');
+
         try {
+            if (ordenEditando && data.estado === 'Listo para Entregar' && ordenEditando.estado !== 'Listo para Entregar') {
+                await updateOrden(ordenEditando.id, { estado: 'Listo para Entregar' });
+            }
+
+            const ordenData: OrdenCreate = {
+                vehiculo_id: data.vehiculo_id,
+                mecanico_id: data.mecanico_id || undefined,
+                estado: data.estado,
+                descripcion_falla: data.descripcion_falla,
+                detalles: [],
+                kilometros: data.kilometros !== '' ? Number(data.kilometros) : undefined,
+                nivel_combustible: data.nivel_combustible,
+                frente_stereo: data.frente_stereo,
+                rueda_auxilio: data.rueda_auxilio,
+                codigo_stereo: data.codigo_stereo || undefined
+            };
+
             if (ordenEditando) {
                 await updateOrden(ordenEditando.id, ordenData);
             } else {
                 await createOrden(ordenData);
             }
+
             onOrdenSaved();
             handleClose();
         } catch (error: any) {
             console.error("Error al guardar orden:", error);
-            const detail = error.response?.data?.detail;
-            if (Array.isArray(detail)) {
-                setErrorServidor(detail.map((d: any) => `${d.loc ? d.loc.join(' -> ') : ''}: ${d.msg}`).join(" | "));
-            } else if (typeof detail === 'string') {
-                setErrorServidor(detail);
-            } else {
-                setErrorServidor("Hubo un error al guardar la orden de trabajo.");
-            }
+            setErrorServidor(error.response?.data?.detail || "Ocurrió un error al intentar guardar la orden de trabajo.");
         } finally {
             setCargando(false);
         }
     };
 
-    const onSubmitForm = async (data: OrdenFormInputs) => {
-        if (Number(data.mecanico_id) === 0) {
+    const onSubmit = (data: OrdenFormInputs) => {
+        if (estadoSeleccionado === 'Listo para Entregar' && !data.mecanico_id) {
             setShowConfirmSinMecanico(true);
+            (window as any)._pendingOrdenData = data;
             return;
         }
 
-        await ejecutarGuardadoOrden(Number(data.mecanico_id));
+        ejecutarGuardadoReal(data);
+    };
+
+    const handleConfirmarGuardadoSinMecanico = () => {
+        setShowConfirmSinMecanico(false);
+        const data = (window as any)._pendingOrdenData;
+        if (data) {
+            ejecutarGuardadoReal(data);
+        }
     };
 
     return (
         <>
-        <Modal show={show} onHide={handleClose} size="lg" centered>
-            <Modal.Header closeButton className={disableAll ? "bg-secondary text-white" : "bg-light"}>
-                <Modal.Title>
-                    {ordenEditando 
-                        ? (disableAll ? 'Orden Archivada (Solo Lectura)' : 'Actualizar Orden de Trabajo') 
-                        : 'Nueva Orden de Ingreso'}
-                </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                
-                {errorServidor && (
-                    <Alert variant="danger" dismissible onClose={() => setErrorServidor('')}>
-                        {errorServidor}
-                    </Alert>
-                )}
+            <Modal show={show} onHide={handleClose} backdrop="static" centered size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>{ordenEditando ? `Editar Orden #${String(ordenEditando.id).slice(0, 8)}` : 'Nueva Orden de Ingreso'}</Modal.Title>
+                </Modal.Header>
+                <Form onSubmit={handleSubmit(onSubmit)}>
+                    <Modal.Body>
+                        {errorServidor && <Alert variant="danger">{errorServidor}</Alert>}
 
-                {disableAll && (
-                    <Alert variant="warning" className="py-2 d-flex justify-content-between align-items-center mb-3">
-                        <span className="mb-0">Esta orden ya fue entregada y archivada. No se pueden modificar sus datos.</span>
-                        <Button 
-                            variant="outline-dark" 
-                            size="sm" 
-                            onClick={handleDesarchivar} 
-                            disabled={cargando}
-                        >
-                            {cargando ? 'Reabriendo...' : 'Desarchivar (Reabrir)'}
-                        </Button>
-                    </Alert>
-                )}
-
-                <Form onSubmit={handleSubmit(onSubmitForm)} id="ordenForm" noValidate>
-                    <Row className="mb-3">
-                        <Col md={5}>
-                            <Form.Group>
-                                <Form.Label className="fw-bold">Vehículo *</Form.Label>
-                                <Form.Select 
-                                    isInvalid={!!errors.vehiculo_id}
-                                    disabled={!!ordenEditando}
-                                    {...register('vehiculo_id', {
-                                        validate: value => Number(value) > 0 || "Por favor selecciona un vehículo."
-                                    })}
-                                >
-                                    <option value={0}>Selecciona un vehículo...</option>
-                                    {vehiculos.map(v => (
-                                        <option key={v.id} value={v.id}>{v.patente} - {v.marca} {v.modelo}</option>
-                                    ))}
-                                </Form.Select>
-                                <Form.Control.Feedback type="invalid">
-                                    {errors.vehiculo_id?.message}
-                                </Form.Control.Feedback>
-                            </Form.Group>
-                        </Col>
-                        
-                        <Col md={4}>
-                            <Form.Group>
-                                <Form.Label className="fw-bold">Mecánico Responsable</Form.Label>
-                                <Form.Select 
-                                    disabled={disableIngreso}
-                                    {...register('mecanico_id')}
-                                >
-                                    <option value={0}>Sin asignar (Opcional)</option>
-                                    {empleados.map(emp => (
-                                        <option key={emp.id} value={emp.id}>
-                                            {emp.nombre} ({emp.rol})
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-
-                        <Col md={3}>
-                            <Form.Group>
-                                <Form.Label className="fw-bold">Estado</Form.Label>
-                                <Form.Select 
-                                    disabled={disableAll}
-                                    {...register('estado')}
-                                >
-                                    <option value="Ingresado">Ingresado</option>
-                                    <option value="En Reparación">En Reparación</option>
-                                    <option value="Listo para Entregar">Listo para Entregar</option>
-                                    <option value="Entregado">Entregado</option>
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                    </Row>
-
-                    <div className="border p-3 rounded bg-light mb-4 shadow-sm">
-                        <h6 className="mb-3 text-secondary border-bottom pb-2 fw-bold">Datos de Ingreso del Vehículo</h6>
-                        
                         <Row className="mb-3">
-                            <Col md={4}>
+                            <Col md={6}>
                                 <Form.Group>
-                                    <Form.Label>Kilómetros Actuales</Form.Label>
-                                    <Form.Control 
-                                        type="number" 
-                                        min="0"
-                                        placeholder="Ej: 154000"
-                                        isInvalid={!!errors.kilometros}
-                                        disabled={disableIngreso}
-                                        {...register('kilometros', {
-                                            validate: value => value === '' || Number(value) >= 0 || "Los kilómetros no pueden ser negativos."
-                                        })}
-                                    />
+                                    <Form.Label>Vehículo *</Form.Label>
+                                    <Form.Select
+                                        {...register('vehiculo_id', { required: 'Debes seleccionar un vehículo.' })}
+                                        isInvalid={!!errors.vehiculo_id}
+                                    >
+                                        <option value="">Selecciona un vehículo...</option>
+                                        {(Array.isArray(vehiculos) ? vehiculos : []).map(v => (
+                                            <option key={v.id} value={v.id}>
+                                                {v.patente} - {v.marca} {v.modelo}
+                                            </option>
+                                        ))}
+                                    </Form.Select>
                                     <Form.Control.Feedback type="invalid">
-                                        {errors.kilometros?.message}
+                                        {errors.vehiculo_id?.message}
                                     </Form.Control.Feedback>
                                 </Form.Group>
                             </Col>
-                            <Col md={4}>
+
+                            <Col md={6}>
                                 <Form.Group>
-                                    <Form.Label>Nivel de Combustible</Form.Label>
-                                    <Form.Select 
-                                        disabled={disableIngreso}
-                                        {...register('nivel_combustible')}
-                                    >
-                                        <option value="">Desconocido...</option>
-                                        <option value="Vacío">Vacío</option>
-                                        <option value="1/4">1/4 Tanque</option>
-                                        <option value="1/2">1/2 Tanque</option>
-                                        <option value="3/4">3/4 Tanque</option>
-                                        <option value="Lleno">Lleno</option>
+                                    <Form.Label>Mecánico Responsable</Form.Label>
+                                    <Form.Select {...register('mecanico_id')}>
+                                        <option value="">Sin asignar...</option>
+                                        {(Array.isArray(empleados) ? empleados : []).map(emp => (
+                                            <option key={emp.id} value={emp.id}>
+                                                {emp.nombre} ({emp.rol})
+                                            </option>
+                                        ))}
                                     </Form.Select>
                                 </Form.Group>
                             </Col>
-                            <Col md={4}>
-                                <Form.Group>
-                                    <Form.Label>Código del Estéreo</Form.Label>
-                                    <Form.Control 
-                                        type="text" 
-                                        placeholder="Ej: 1432"
-                                        disabled={disableIngreso}
-                                        {...register('codigo_stereo')}
-                                    />
-                                </Form.Group>
-                            </Col>
                         </Row>
 
-                        <Row>
-                            <Col md={4}>
-                                <Form.Group>
-                                    <Form.Check 
-                                        type="checkbox" 
-                                        label="¿Dejó el Frente de Estéreo?" 
-                                        disabled={disableIngreso}
+                        <Form.Group className="mb-3">
+                            <Form.Label>Estado de la Orden</Form.Label>
+                            <Form.Select {...register('estado')}>
+                                <option value="En Recepción">En Recepción</option>
+                                <option value="En Diagnóstico">En Diagnóstico</option>
+                                <option value="En Reparación">En Reparación</option>
+                                <option value="Listo para Entregar">Listo para Entregar</option>
+                                <option value="Entregado">Entregado / Finalizado</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </Form.Select>
+                        </Form.Group>
+
+                        <div className="p-3 mb-3 bg-light rounded border">
+                            <h6 className="fw-bold mb-3">Datos de Ingreso del Vehículo</h6>
+                            <Row className="g-3">
+                                <Col md={6}>
+                                    <Form.Group>
+                                        <Form.Label>Kilómetros Actuales</Form.Label>
+                                        <Form.Control
+                                            type="number"
+                                            placeholder="Ej: 154000"
+                                            {...register('kilometros')}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group>
+                                        <Form.Label>Nivel de Combustible</Form.Label>
+                                        <Form.Select {...register('nivel_combustible')}>
+                                            <option value="Reserva">Reserva / Muy Bajo</option>
+                                            <option value="1/4">1/4 Tanque</option>
+                                            <option value="Medio">1/2 Tanque (Medio)</option>
+                                            <option value="3/4">3/4 Tanque</option>
+                                            <option value="Lleno">Tanque Lleno</option>
+                                            <option value="Desconocido">Desconocido...</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group>
+                                        <Form.Label>Código del Estéreo (Si aplica)</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Ej: 1432"
+                                            {...register('codigo_stereo')}
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6} className="d-flex align-items-center gap-4 pt-4">
+                                    <Form.Check
+                                        type="checkbox"
+                                        id="frente_stereo"
+                                        label="Tiene Frente Estéreo"
                                         {...register('frente_stereo')}
                                     />
-                                </Form.Group>
-                            </Col>
-                            <Col md={4}>
-                                <Form.Group>
-                                    <Form.Check 
-                                        type="checkbox" 
-                                        label="¿Tiene Rueda de Auxilio?" 
-                                        disabled={disableIngreso}
+                                    <Form.Check
+                                        type="checkbox"
+                                        id="rueda_auxilio"
+                                        label="Tiene Rueda Auxilio"
                                         {...register('rueda_auxilio')}
                                     />
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                    </div>
+                                </Col>
+                            </Row>
+                        </div>
 
-                    <Form.Group className="mb-2">
-                        <Form.Label className="fw-bold">Descripción del problema / Tareas a realizar *</Form.Label>
-                        <Form.Control 
-                            as="textarea" 
-                            rows={3} 
-                            isInvalid={!!errors.descripcion_falla}
-                            disabled={disableDesc}
-                            {...register('descripcion_falla', {
-                                required: "La descripción del problema o falla es obligatoria.",
-                                minLength: { value: 2, message: "La descripción debe tener al menos 2 caracteres." }
-                            })}
-                        />
-                        <Form.Control.Feedback type="invalid">
-                            {errors.descripcion_falla?.message}
-                        </Form.Control.Feedback>
-                    </Form.Group>
-
+                        <Form.Group className="mb-3">
+                            <Form.Label>Descripción del Trabajo o Falla Reportada *</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                placeholder="Describe el problema del vehículo o las tareas a realizar..."
+                                {...register('descripcion_falla', {
+                                    required: 'Debes ingresar una descripción.',
+                                    minLength: { value: 3, message: 'Ingresa al menos 3 caracteres.' }
+                                })}
+                                isInvalid={!!errors.descripcion_falla}
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {errors.descripcion_falla?.message}
+                            </Form.Control.Feedback>
+                        </Form.Group>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={handleClose} disabled={cargando}>
+                            Cancelar
+                        </Button>
+                        <Button variant="success" type="submit" disabled={cargando}>
+                            {cargando ? <Spinner animation="border" size="sm" /> : (ordenEditando ? 'Guardar Cambios' : 'Crear Orden')}
+                        </Button>
+                    </Modal.Footer>
                 </Form>
-            </Modal.Body>
-            <Modal.Footer>
-                <Button variant="secondary" onClick={handleClose} disabled={cargando}>Cerrar</Button>
-                
-                {!disableAll && (
-                    <Button variant="primary" type="submit" form="ordenForm" disabled={cargando}>
-                        {cargando ? <><Spinner animation="border" size="sm" className="me-2" />Guardando...</> : (ordenEditando ? 'Guardar Cambios' : 'Crear Orden de Ingreso')}
-                    </Button>
-                )}
-            </Modal.Footer>
-        </Modal>
+            </Modal>
 
-        <ConfirmModal
-            show={showConfirmSinMecanico}
-            title="Confirmación de Registro"
-            message="¿Está seguro de no asignar un mecánico a cargo?"
-            confirmText="Sí, Continuar"
-            confirmVariant="primary"
-            onClose={() => setShowConfirmSinMecanico(false)}
-            onConfirm={() => {
-                setShowConfirmSinMecanico(false);
-                ejecutarGuardadoOrden(0);
-            }}
-        />
+            <ConfirmModal
+                show={showConfirmSinMecanico}
+                title="Aviso de Asignación"
+                message="Esta orden pasará a 'Listo para Entregar' pero no tiene mecánico asignado. ¿Deseas guardar de todos modos?"
+                confirmText="Sí, Guardar"
+                confirmVariant="warning"
+                onClose={() => setShowConfirmSinMecanico(false)}
+                onConfirm={handleConfirmarGuardadoSinMecanico}
+            />
         </>
     );
 }

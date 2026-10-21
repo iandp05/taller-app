@@ -15,9 +15,8 @@ export default function EmpleadosPage() {
     const [showHistorialModal, setShowHistorialModal] = useState(false);
     const [empleadoHistorial, setEmpleadoHistorial] = useState<Usuario | null>(null);
 
-    // Estados para controlar el modal flotante de confirmación
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [idEmpleadoAEliminar, setIdEmpleadoAEliminar] = useState<number | null>(null);
+    const [idEmpleadoAEliminar, setIdEmpleadoAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const [busqueda, setBusqueda] = useState('');
@@ -27,9 +26,10 @@ export default function EmpleadosPage() {
     const cargarEmpleados = async () => {
         try {
             const data = await getUsuarios();
-            setEmpleados(data);
+            setEmpleados(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error al obtener empleados:", error);
+            setEmpleados([]);
         }
     };
 
@@ -41,10 +41,11 @@ export default function EmpleadosPage() {
         setPaginaActual(1);
     }, [busqueda]);
 
-    const empleadosFiltrados = empleados.filter(e => 
-        e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        e.username.toLowerCase().includes(busqueda.toLowerCase()) ||
-        e.rol.toLowerCase().includes(busqueda.toLowerCase())
+    const listaEmpleados = Array.isArray(empleados) ? empleados : [];
+    const empleadosFiltrados = listaEmpleados.filter(e =>
+        (e.nombre && e.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
+        (e.username && e.username.toLowerCase().includes(busqueda.toLowerCase())) ||
+        (e.rol && e.rol.toLowerCase().includes(busqueda.toLowerCase()))
     );
 
     const indiceUltimoItem = paginaActual * itemsPorPagina;
@@ -54,13 +55,9 @@ export default function EmpleadosPage() {
 
     const handleNuevoEmpleado = () => { setEmpleadoSeleccionado(null); setShowModal(true); };
     const handleEditarEmpleado = (empleado: Usuario) => { setEmpleadoSeleccionado(empleado); setShowModal(true); };
-    
-    const handleVerHistorial = (empleado: Usuario) => {
-        setEmpleadoHistorial(empleado);
-        setShowHistorialModal(true);
-    };
+    const handleVerHistorial = (empleado: Usuario) => { setEmpleadoHistorial(empleado); setShowHistorialModal(true); };
 
-    const handleEliminarEmpleadoClick = (id: number) => {
+    const handleEliminarEmpleadoClick = (id: string | number) => {
         setIdEmpleadoAEliminar(id);
         setShowConfirmModal(true);
     };
@@ -75,7 +72,7 @@ export default function EmpleadosPage() {
             cargarEmpleados();
         } catch (error) {
             console.error("Error al eliminar:", error);
-            setErrorMsg("No se pudo eliminar el empleado.");
+            setErrorMsg("No se puede eliminar el empleado porque tiene historial de órdenes asociadas.");
         }
     };
 
@@ -83,9 +80,9 @@ export default function EmpleadosPage() {
         <div>
             {errorMsg && <Alert variant="danger" dismissible onClose={() => setErrorMsg(null)} className="mb-3">{errorMsg}</Alert>}
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 mb-md-4">
-                <h2 className="mb-0">Directorio de Personal</h2>
+                <h2 className="mb-0">Gestión de Personal</h2>
                 <Button variant="success" onClick={handleNuevoEmpleado} className="w-100 w-sm-auto">
-                    Registrar Empleado
+                    Nuevo Empleado
                 </Button>
             </div>
 
@@ -105,42 +102,40 @@ export default function EmpleadosPage() {
                         </Col>
                     </Row>
 
-                    <Table striped hover responsive className="mb-0 align-middle">
+                    <Table striped hover responsive className="mb-0">
                         <thead className="table-dark">
                             <tr>
-                                <th>ID</th>
                                 <th>Nombre Completo</th>
-                                <th>Usuario (Login)</th>
-                                <th>Rol</th>
+                                <th>Usuario</th>
+                                <th>Rol / Puesto</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {empleadosPaginados.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="text-center py-4 text-muted">
-                                        No hay empleados registrados.
+                                    <td colSpan={4} className="text-center py-4 text-muted">
+                                        No se encontraron empleados.
                                     </td>
                                 </tr>
                             ) : (
                                 empleadosPaginados.map((empleado) => (
                                     <tr key={empleado.id}>
-                                        <td className="fw-bold">{empleado.id}</td>
-                                        <td>{empleado.nombre}</td>
-                                        <td className="text-primary fw-medium">{empleado.username}</td>
+                                        <td className="fw-bold">{empleado.nombre}</td>
+                                        <td><code>{empleado.username}</code></td>
                                         <td>
-                                            <Badge bg={empleado.rol === 'Administrador' ? 'danger' : (empleado.rol === 'Jefe de Taller' ? 'warning' : 'secondary')} className="text-dark">
+                                            <Badge bg={empleado.rol === 'Administrador' ? 'danger' : 'primary'}>
                                                 {empleado.rol}
                                             </Badge>
                                         </td>
                                         <td>
-                                            <Button variant="outline-info" size="sm" className="me-2 mb-1" onClick={() => handleVerHistorial(empleado)}>
+                                            <Button variant="outline-info" size="sm" className="me-1 mb-1 me-sm-2 mb-sm-0" onClick={() => handleVerHistorial(empleado)}>
                                                 Historial
                                             </Button>
-                                            <Button variant="outline-primary" size="sm" className="me-2 mb-1" onClick={() => handleEditarEmpleado(empleado)}>
+                                            <Button variant="outline-primary" size="sm" className="me-1 mb-1 me-sm-2 mb-sm-0" onClick={() => handleEditarEmpleado(empleado)}>
                                                 Editar
                                             </Button>
-                                            <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarEmpleadoClick(empleado.id)}>
+                                            <Button variant="outline-danger" size="sm" className="mb-1 mb-sm-0" onClick={() => handleEliminarEmpleadoClick(empleado.id)}>
                                                 Eliminar
                                             </Button>
                                         </td>
@@ -168,12 +163,16 @@ export default function EmpleadosPage() {
 
             <EmpleadosModal show={showModal} handleClose={() => setShowModal(false)} onEmpleadoSaved={cargarEmpleados} empleadoEditando={empleadoSeleccionado} />
 
-            <EmpleadoHistorialModal show={showHistorialModal} handleClose={() => setShowHistorialModal(false)} empleado={empleadoHistorial} />
+            <EmpleadoHistorialModal
+                show={showHistorialModal}
+                handleClose={() => setShowHistorialModal(false)}
+                empleado={empleadoHistorial}
+            />
 
             <ConfirmModal
                 show={showConfirmModal}
-                title="Confirmar Desvinculación"
-                message="¿Estás seguro de que deseas desvincular a este empleado del sistema?"
+                title="Confirmar Eliminación"
+                message="¿Estás seguro de que deseas eliminar este empleado?"
                 confirmText="Sí, Eliminar"
                 confirmVariant="danger"
                 onClose={() => setShowConfirmModal(false)}

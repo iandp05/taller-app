@@ -11,7 +11,7 @@ export const getPresupuestos = async (): Promise<Presupuesto[]> => {
     }
 };
 
-export const getPresupuestoById = async (id: number): Promise<Presupuesto> => {
+export const getPresupuestoById = async (id: string | number): Promise<Presupuesto> => {
     const response = await api.get<Presupuesto>(`/presupuestos/${id}`);
     return response.data;
 };
@@ -21,11 +21,11 @@ export const createPresupuesto = async (presupuesto: PresupuestoCreate): Promise
     return response.data;
 };
 
-export const updatePresupuesto = async (id: number, presupuesto: Partial<PresupuestoCreate>): Promise<Presupuesto> => {
+export const updatePresupuesto = async (id: string | number, presupuesto: Partial<PresupuestoCreate>): Promise<Presupuesto> => {
     const response = await api.put<Presupuesto>(`/presupuestos/${id}`, presupuesto);
     return response.data;
 };
 
-export const deletePresupuesto = async (id: number): Promise<void> => {
+export const deletePresupuesto = async (id: string | number): Promise<void> => {
     await api.delete(`/presupuestos/${id}`);
 };
