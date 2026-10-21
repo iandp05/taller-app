@@ -6,10 +6,7 @@ const getBaseUrl = () => {
     if (import.meta.env.VITE_API_URL) {
         return import.meta.env.VITE_API_URL;
     }
-    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        return '/api';
-    }
-    return 'http://localhost:8000';
+    return '';
 };
 
 // 1. Instancia centralizada para conectar con el backend de FastAPI
@@ -28,7 +25,6 @@ api.interceptors.request.use(
             config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // Inyectamos el subdominio del taller automáticamente en cada petición
         const tallerSlug = getTallerSlug();
         config.headers['X-Taller-Slug'] = tallerSlug;
 
@@ -39,7 +35,7 @@ api.interceptors.request.use(
     }
 );
 
-// 3. Interceptor de respuestas (Escudo global contra crasheos)
+// 3. Interceptor de respuestas
 api.interceptors.response.use(
     (response) => {
         return response;
