@@ -66,27 +66,83 @@ def procesar_cola_sincronizacion():
 
 def sincronizar_desde_turso():
     """
-    Sincronización descendente (Turso -> Local) leyendo registros modificados.
+    Sincronización descendente (Turso Cloud DB -> SQLite Local):
+    Lee los registros guardados en Turso Cloud DB e inserta/actualiza (UPSERT)
+    en la base de datos SQLite local para que la App de Escritorio vea en tiempo real
+    los datos creados o modificados desde la Web de Netlify.
     """
     turso_url_env = os.environ.get("TURSO_DATABASE_URL")
     turso_token = os.environ.get("TURSO_AUTH_TOKEN")
+
     if not turso_url_env or not turso_token:
         return
+
+    local_db_path = APP_PATHS['db_path']
+    if not os.path.exists(local_db_path):
+        return
+
+    tablas = [
+        "usuarios",
+        "clientes",
+        "vehiculos",
+        "inventario",
+        "ordenes_trabajo",
+        "presupuestos",
+        "facturas",
+        "configuracion_taller"
+    ]
+
+    try:
+        turso_conn = utils.turso_driver.connect(turso_url_env, turso_token)
+        turso_cur = turso_conn.cursor()
+
+        conn_local = sqlite3.connect(local_db_path)
+        cursor_local = conn_local.cursor()
+
+        for tabla in tablas:
+            try:
+                cursor_local.execute(f"PRAGMA table_info({tabla});")
+                cols_local = cursor_local.fetchall()
+                if not cols_local:
+                    continue
+
+                col_names = [col[1] for col in cols_local]
+                cols_str = ", ".join([f'"{c}"' for c in col_names])
+                placeholders = ", ".join(["?"] * len(col_names))
+                sql_upsert = f'INSERT OR REPLACE INTO "{tabla}" ({cols_str}) VALUES ({placeholders});'
+
+                turso_cur.execute(f'SELECT {cols_str} FROM "{tabla}";')
+                rows_turso = turso_cur.fetchall()
+
+                if rows_turso:
+                    cursor_local.executemany(sql_upsert, rows_turso)
+                    conn_local.commit()
+            except Exception as e_t:
+                pass
+
+        conn_local.close()
+    except Exception as err:
+        print("Worker Sync: Error en sincronización descendente Turso -> Local:", err)
 
 def iniciar_worker_sync_background(intervalo_segundos: int = 7):
     def loop():
         while True:
             try:
+                # 1. Subida Outbox (Escritorio -> Turso Cloud DB)
                 procesar_cola_sincronizacion()
+
+                # 2. Bajada Differential (Turso Cloud DB -> SQLite Local)
+                sincronizar_desde_turso()
             except Exception as e:
                 print("Excepción en loop de sincronización:", e)
             time.sleep(intervalo_segundos)
 
     thread = threading.Thread(target=loop, daemon=True, name="WorkerSyncTurso")
     thread.start()
-    print(f"--- Worker Sync de Turso iniciado en segundo plano (intervalo {intervalo_segundos}s) ---")
+    print(f"--- Worker Sync Bidireccional de Turso iniciado en segundo plano (intervalo {intervalo_segundos}s) ---")
     return thread
 
 if __name__ == "__main__":
-    print("Ejecutando worker de sincronización manualmente...")
+    print("Ejecutando worker de sincronización bidireccional manualmente...")
     procesar_cola_sincronizacion()
+    sincronizar_desde_turso()
