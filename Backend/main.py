@@ -38,6 +38,8 @@ from modulos.factura import router as factura_router
 from modulos.configuracion import router as configuracion_router
 from modulos.actualizaciones import router as actualizaciones_router
 
+from modulos.usuarios.services import get_password_hash
+
 # ==========================================
 # LIFESPAN CONTEXT MANAGER (CREACIÓN AUTOMÁTICA DDL EN AMBOS MOTORES)
 # ==========================================
@@ -52,17 +54,25 @@ async def lifespan(app: FastAPI):
     except Exception as err_loc:
         print("Aviso al inicializar BDD local:", err_loc)
 
-    # 2. Crear tablas DDL obligatorias en Turso Cloud DB y sembrar usuario 'luca' (1234)
-    try:
-        turso_engine = get_turso_engine()
-        if turso_engine:
+    # 2. Crear tablas DDL obligatorias en Turso Cloud DB y verificar usuario inicial
+    turso_engine = get_turso_engine()
+    if turso_engine:
+        try:
             Base.metadata.create_all(bind=turso_engine)
             temp_session = sessionmaker(autocommit=False, autoflush=False, bind=turso_engine)()
-            sembrar_datos_completos(session=temp_session, bind_engine=turso_engine)
+            if temp_session.query(usuarios_models.Usuario).filter(usuarios_models.Usuario.username == "luca").first() is None:
+                nuevo_empleado = usuarios_models.Usuario(
+                    nombre="Luca Del Pino",
+                    username="luca",
+                    password_hash=get_password_hash("1234"),
+                    rol="Mecánico"
+                )
+                temp_session.add(nuevo_empleado)
+                temp_session.commit()
             temp_session.close()
-            print("--- ¡Estructura DDL y Usuario inicial creados en Turso Cloud DB! ---")
-    except Exception as err_tur:
-        print("Aviso al inicializar BDD en Turso Cloud DB:", err_tur)
+            print("--- ¡Estructura DDL y Usuario inicial verificados en Turso Cloud DB! ---")
+        except Exception as err_tur:
+            print("Aviso al inicializar BDD en Turso Cloud DB:", err_tur)
 
     # 3. Iniciar worker de sincronización Outbox en segundo plano
     try:

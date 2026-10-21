@@ -8,7 +8,7 @@ from modulos.inventario.models import Producto
 from modulos.usuarios.models import Usuario
 from modulos.usuarios.services import get_password_hash
 
-# 1. Catálogo ampliado de marcas y modelos frecuentes
+# Catálogo ampliado de marcas y modelos frecuentes
 catalogo_vehiculos = {
     "IKA / Rastrojero": [
         "Rastrojero Diesel", "Rastrojero Frontal", "Estanciera", "Baqueano", "Carabela", "Jeep IKA"
@@ -115,36 +115,20 @@ catalogo_vehiculos = {
     ]
 }
 
-clientes_iniciales = [
-    {
-        "nombre": "Carlos Gomez",
-        "telefono": "2966123456",
-        "email": "carlos.gomez@email.com",
-        "domicilio": "Av. San Martín 123",
-        "cuit": "20-33445566-1",
-        "condicion_iva": "Consumidor Final"
-    }
-]
-
-vehiculos_iniciales = [
-    {"cliente_id": 1, "patente": "AA123BB", "marca": "Toyota", "modelo": "Etios", "anio": 2017}
-]
-
-repuestos_iniciales = [
-    {"nombre": "Aceite Sintético 10W40 (Bidón 4L)", "codigo": "ACE-10W40-4L", "categoria": "Lubricantes", "precio": 45000.00, "cantidad": 15, "stock_critico": 4},
-    {"nombre": "Filtro de Aceite Mann Filter", "codigo": "FIL-ACE-01", "categoria": "Filtros", "precio": 12500.00, "cantidad": 8, "stock_critico": 3}
-]
-
 def sembrar_datos_completos(session=None, bind_engine=None):
     target_engine = bind_engine or engine
     Base.metadata.create_all(bind=target_engine)
     db = session or SesionLocal()
     
     try:
+        # Use fast bulk_save_objects to insert catalog in a single batch
         if db.query(CatalogoVehiculo).count() == 0:
-            for marca, modelos in catalogo_vehiculos.items():
-                for modelo in modelos:
-                    db.add(CatalogoVehiculo(marca=marca, modelo=modelo))
+            catalog_objects = [
+                CatalogoVehiculo(marca=marca, modelo=modelo)
+                for marca, modelos in catalogo_vehiculos.items()
+                for modelo in modelos
+            ]
+            db.bulk_save_objects(catalog_objects)
             db.commit()
 
         if db.query(Usuario).filter(Usuario.username == "luca").first() is None:
