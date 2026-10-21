@@ -34,10 +34,12 @@ create_shortcut.vbs
 # Node & Frontend Dependencies
 node_modules/
 Frontend/node_modules/
-Frontend/dist/
 Frontend/dist_frontend/
 .npm
 .eslintcache
+
+# Permitir dist del Frontend para servir en Render
+!Frontend/dist/
 
 # Environment Variables & Secrets
 .env
