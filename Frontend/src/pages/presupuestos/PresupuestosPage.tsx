@@ -94,6 +94,16 @@ export default function PresupuestosPage() {
         setShowPdfModal(true);
     };
 
+    const handleWhatsApp = (presupuesto: Presupuesto) => {
+        const cliente = getCliente(presupuesto.cliente_id);
+        const vehiculo = getVehiculo(presupuesto.vehiculo_id);
+        const telefono = cliente?.telefono?.replace(/[^0-9]/g, '') || '';
+        const mensaje = encodeURIComponent(
+            `Hola ${cliente?.nombre || 'Cliente'}, te enviamos el Presupuesto #${String(presupuesto.id).slice(0, 8)} para tu vehículo ${vehiculo ? vehiculo.marca + ' ' + vehiculo.modelo : ''} (${vehiculo?.patente || ''}) por un monto total de $${presupuesto.total.toLocaleString('es-AR')}. ¡Quedamos atentos a tus comentarios!`
+        );
+        window.open(`https://wa.me/${telefono}?text=${mensaje}`, '_blank');
+    };
+
     const handleEliminarClick = (id: string | number) => {
         setPresupuestoIdAEliminar(id);
         setShowConfirmModal(true);
@@ -176,9 +186,12 @@ export default function PresupuestosPage() {
                                             </td>
                                             <td className="text-end fw-bold">${presupuesto.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
                                             <td className="text-center">
-                                                <Button variant="outline-success" size="sm" className="me-2 mb-1" onClick={() => handleVerPDF(presupuesto.id)}>Imprimir</Button>
-                                                <Button variant="outline-primary" size="sm" className="me-2 mb-1" onClick={() => handleEditarPresupuesto(presupuesto)}>Editar</Button>
-                                                <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarClick(presupuesto.id)}>Eliminar</Button>
+                                                <Button variant="outline-success" size="sm" className="me-1 mb-1" onClick={() => handleWhatsApp(presupuesto)} title="Enviar por WhatsApp">
+                                                    📱 WhatsApp
+                                                </Button>
+                                                <Button variant="outline-dark" size="sm" className="me-1 mb-1" onClick={() => handleVerPDF(presupuesto.id)}>Imprimir</Button>
+                                                <Button variant="outline-primary" size="sm" className="me-1 mb-1" onClick={() => handleEditarPresupuesto(presupuesto)}>Editar</Button>
+                                                <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarClick(presupuesto.id)}>Borrar</Button>
                                             </td>
                                         </tr>
                                     );

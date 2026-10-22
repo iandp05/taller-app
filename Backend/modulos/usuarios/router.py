@@ -53,6 +53,15 @@ def eliminar_usuario(usuario_id: str, db: Session = Depends(get_db)):
             detail="No se puede eliminar a este empleado porque tiene historial de órdenes de trabajo asociadas."
         )
 
+@router.put("/me/tema")
+def actualizar_tema_usuario(tema_data: dict, db: Session = Depends(get_db)):
+    nuevo_tema = tema_data.get("preferencia_tema", "light")
+    usuario = services.get_usuario_por_username(db, "luca")
+    if usuario:
+        usuario.preferencia_tema = nuevo_tema
+        db.commit()
+    return {"preferencia_tema": nuevo_tema}
+
 @router.post("/login", response_model=schemas.UsuarioTokenResponse)
 def login_usuario(credenciales: schemas.UsuarioLogin, db: Session = Depends(get_db)):
     usuario_limpio = credenciales.username.strip().lower()
@@ -73,6 +82,7 @@ def login_usuario(credenciales: schemas.UsuarioLogin, db: Session = Depends(get_
         "nombre": usuario.nombre,
         "username": usuario.username,
         "rol": usuario.rol,
+        "preferencia_tema": usuario.preferencia_tema or "light",
         "access_token": access_token,
         "token_type": "bearer"
     }

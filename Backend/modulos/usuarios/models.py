@@ -13,6 +13,7 @@ class Usuario(Base):
     username = Column(String(100), unique=True, index=True)
     password_hash = Column(String(255))
     rol = Column(String(50), default="mecanico")
+    preferencia_tema = Column(String(20), default="light")
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
     ordenes_atendidas = relationship("OrdenTrabajo", back_populates="mecanico")

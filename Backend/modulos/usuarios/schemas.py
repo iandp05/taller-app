@@ -6,6 +6,7 @@ class UsuarioBase(BaseModel):
     nombre: str = Field(..., min_length=2, max_length=100, description="Nombre completo del usuario")
     username: str = Field(..., min_length=3, max_length=50, description="Nombre de usuario para login")
     rol: str = Field("Mecánico", min_length=2, max_length=50, description="Rol asignado en el taller")
+    preferencia_tema: Optional[str] = Field("light", description="Tema preferido (light u dark)")
 
     @field_validator("nombre", "rol", mode="before")
     @classmethod
