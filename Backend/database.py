@@ -123,6 +123,11 @@ def ejecutar_migraciones_sqlite():
         if cols_presupuestos and "mecanico_id" not in cols_presupuestos:
             cursor.execute("ALTER TABLE presupuestos ADD COLUMN mecanico_id INTEGER REFERENCES usuarios(id)")
 
+        cursor.execute("PRAGMA table_info(usuarios)")
+        cols_usuarios = [row[1] for row in cursor.fetchall()]
+        if cols_usuarios and "preferencia_tema" not in cols_usuarios:
+            cursor.execute("ALTER TABLE usuarios ADD COLUMN preferencia_tema VARCHAR(20) DEFAULT 'light'")
+
         conn.commit()
         conn.close()
     except Exception as e:
@@ -141,6 +146,12 @@ def ejecutar_migraciones_turso(turso_engine):
 
             try:
                 conn.execute(text("ALTER TABLE usuarios ADD COLUMN updated_at DATETIME;"))
+                conn.commit()
+            except Exception:
+                pass
+
+            try:
+                conn.execute(text("ALTER TABLE usuarios ADD COLUMN preferencia_tema VARCHAR(20) DEFAULT 'light';"))
                 conn.commit()
             except Exception:
                 pass
