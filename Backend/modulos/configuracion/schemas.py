@@ -1,5 +1,5 @@
 # backend/modulos/configuracion/schemas.py
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 
 class ConfiguracionTallerBase(BaseModel):
@@ -24,6 +24,11 @@ class ConfiguracionTallerUpdate(ConfiguracionTallerBase):
 
 class ConfiguracionTallerResponse(ConfiguracionTallerBase):
     id: str
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def convertir_id_str(cls, v):
+        return str(v) if v is not None else ""
 
     class Config:
         from_attributes = True

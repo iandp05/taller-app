@@ -4,7 +4,6 @@ import { Navbar, Nav, Container, Button, Badge } from 'react-bootstrap';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { useTheme } from '../context/ThemeContext';
 import { api } from '../api/axios';
 
 // Importamos la configuración y API
@@ -13,7 +12,6 @@ import { getConfiguracion } from '../api/configuracionApi';
 
 export default function AppNavbar() {
     const { user, logout } = useContext(AuthContext);
-    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const isOnline = useOnlineStatus();
     const [config, setConfig] = useState(EMPRESA_CONFIG);
@@ -108,21 +106,9 @@ export default function AppNavbar() {
                         </Nav.Link>
                     </Nav>
 
-                    {/* Zona del usuario conectado, botones de tema y sincronización */}
+                    {/* Zona del usuario conectado y badge de sincronización */}
                     {user && (
                         <Nav className="ms-auto align-items-center gap-2 gap-md-3 mt-2 mt-lg-0">
-                            {/* Toggle Tema Claro / Oscuro */}
-                            <Button
-                                variant="outline-secondary"
-                                size="sm"
-                                onClick={toggleTheme}
-                                className="d-flex align-items-center gap-1 border-0"
-                                title="Cambiar tema claro/oscuro"
-                            >
-                                {theme === 'dark' ? '☀️ Claro' : '🌙 Oscuro'}
-                            </Button>
-
-                            {/* Badge de Sincronización Outbox */}
                             {!isOnline ? (
                                 <Badge bg="danger" className="px-2 py-1 fw-bold">🔴 Sin Conexión</Badge>
                             ) : syncPendientes > 0 ? (

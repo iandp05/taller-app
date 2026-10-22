@@ -1,6 +1,6 @@
 // Frontend/src/pages/ordenes/OrdenModal.tsx
 import { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col, Alert, Spinner } from 'react-bootstrap';
+import { Modal, Button, Form, Row, Col, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { OrdenTrabajo, OrdenCreate, Vehiculo, Usuario } from '../../types';
 import { createOrden, updateOrden } from '../../api/ordenesApi';
@@ -30,7 +30,8 @@ interface OrdenFormInputs {
 export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEditando }: OrdenModalProps) {
     const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
     const [empleados, setEmpleados] = useState<Usuario[]>([]);
-    
+    const [busquedaVehiculo, setBusquedaVehiculo] = useState('');
+
     const [cargando, setCargando] = useState(false);
     const [errorServidor, setErrorServidor] = useState('');
     const [showConfirmSinMecanico, setShowConfirmSinMecanico] = useState(false);
@@ -74,6 +75,7 @@ export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEdita
         if (show) {
             cargarDatosModal();
             setErrorServidor('');
+            setBusquedaVehiculo('');
 
             if (ordenEditando) {
                 reset({
@@ -83,8 +85,8 @@ export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEdita
                     descripcion_falla: ordenEditando.descripcion_falla || '',
                     kilometros: ordenEditando.kilometros !== null && ordenEditando.kilometros !== undefined ? ordenEditando.kilometros : '',
                     nivel_combustible: ordenEditando.nivel_combustible || 'Medio',
-                    frente_stereo: Boolean(ordenEditando.frente_stereo),
-                    rueda_auxilio: Boolean(ordenEditando.rueda_auxilio),
+                    frente_stereo: String(ordenEditando.frente_stereo).toLowerCase() === 'si' || Boolean(ordenEditando.frente_stereo),
+                    rueda_auxilio: String(ordenEditando.rueda_auxilio).toLowerCase() === 'si' || Boolean(ordenEditando.rueda_auxilio),
                     codigo_stereo: ordenEditando.codigo_stereo || ''
                 });
             } else {
@@ -103,6 +105,13 @@ export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEdita
         }
     }, [show, ordenEditando, reset]);
 
+    const vehiculosFiltrados = (Array.isArray(vehiculos) ? vehiculos : []).filter(v =>
+        !busquedaVehiculo ||
+        v.patente.toLowerCase().includes(busquedaVehiculo.toLowerCase()) ||
+        v.marca.toLowerCase().includes(busquedaVehiculo.toLowerCase()) ||
+        v.modelo.toLowerCase().includes(busquedaVehiculo.toLowerCase())
+    );
+
     const ejecutarGuardadoReal = async (data: OrdenFormInputs) => {
         setCargando(true);
         setErrorServidor('');
@@ -120,8 +129,8 @@ export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEdita
                 detalles: [],
                 kilometros: data.kilometros !== '' ? Number(data.kilometros) : undefined,
                 nivel_combustible: data.nivel_combustible,
-                frente_stereo: data.frente_stereo,
-                rueda_auxilio: data.rueda_auxilio,
+                frente_stereo: data.frente_stereo ? "Si" : "No",
+                rueda_auxilio: data.rueda_auxilio ? "Si" : "No",
                 codigo_stereo: data.codigo_stereo || undefined
             };
 
@@ -173,12 +182,21 @@ export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEdita
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label>Vehículo *</Form.Label>
+                                    <InputGroup className="mb-1">
+                                        <InputGroup.Text>🔍</InputGroup.Text>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Tipea patente o modelo..."
+                                            value={busquedaVehiculo}
+                                            onChange={(e) => setBusquedaVehiculo(e.target.value)}
+                                        />
+                                    </InputGroup>
                                     <Form.Select
                                         {...register('vehiculo_id', { required: 'Debes seleccionar un vehículo.' })}
                                         isInvalid={!!errors.vehiculo_id}
                                     >
-                                        <option value="">Selecciona un vehículo...</option>
-                                        {(Array.isArray(vehiculos) ? vehiculos : []).map(v => (
+                                        <option value="">Selecciona un vehículo ({vehiculosFiltrados.length})...</option>
+                                        {vehiculosFiltrados.map(v => (
                                             <option key={v.id} value={v.id}>
                                                 {v.patente} - {v.marca} {v.modelo}
                                             </option>
@@ -234,50 +252,51 @@ export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEdita
                                     <Form.Group>
                                         <Form.Label>Nivel de Combustible</Form.Label>
                                         <Form.Select {...register('nivel_combustible')}>
-                                            <option value="Reserva">Reserva / Muy Bajo</option>
-                                            <option value="1/4">1/4 Tanque</option>
-                                            <option value="Medio">1/2 Tanque (Medio)</option>
-                                            <option value="3/4">3/4 Tanque</option>
-                                            <option value="Lleno">Tanque Lleno</option>
-                                            <option value="Desconocido">Desconocido...</option>
+                                            <option value="Reserva">Reserva (1/8)</option>
+                                            <option value="Bajo">Bajo (1/4)</option>
+                                            <option value="Medio">Medio (1/2)</option>
+                                            <option value="Alto">Alto (3/4)</option>
+                                            <option value="Lleno">Lleno (4/4)</option>
                                         </Form.Select>
                                     </Form.Group>
                                 </Col>
                                 <Col md={6}>
-                                    <Form.Group>
-                                        <Form.Label>Código del Estéreo (Si aplica)</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="Ej: 1432"
-                                            {...register('codigo_stereo')}
-                                        />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6} className="d-flex align-items-center gap-4 pt-4">
                                     <Form.Check
-                                        type="checkbox"
-                                        id="frente_stereo"
+                                        type="switch"
+                                        id="stereo-switch"
                                         label="Tiene Frente Estéreo"
                                         {...register('frente_stereo')}
                                     />
+                                </Col>
+                                <Col md={6}>
                                     <Form.Check
-                                        type="checkbox"
-                                        id="rueda_auxilio"
+                                        type="switch"
+                                        id="auxilio-switch"
                                         label="Tiene Rueda Auxilio"
                                         {...register('rueda_auxilio')}
                                     />
+                                </Col>
+                                <Col md={12}>
+                                    <Form.Group>
+                                        <Form.Label>Código Estéreo / Observaciones Extra</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Ej: 1234 o detalles..."
+                                            {...register('codigo_stereo')}
+                                        />
+                                    </Form.Group>
                                 </Col>
                             </Row>
                         </div>
 
                         <Form.Group className="mb-3">
-                            <Form.Label>Descripción del Trabajo o Falla Reportada *</Form.Label>
+                            <Form.Label>Descripción del Trabajo o Falla Informada *</Form.Label>
                             <Form.Control
                                 as="textarea"
                                 rows={3}
-                                placeholder="Describe el problema del vehículo o las tareas a realizar..."
+                                placeholder="Describe el problema del vehículo o las tareas solicitadas..."
                                 {...register('descripcion_falla', {
-                                    required: 'Debes ingresar una descripción.',
+                                    required: 'La descripción es obligatoria.',
                                     minLength: { value: 3, message: 'Ingresa al menos 3 caracteres.' }
                                 })}
                                 isInvalid={!!errors.descripcion_falla}
@@ -292,7 +311,7 @@ export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEdita
                             Cancelar
                         </Button>
                         <Button variant="success" type="submit" disabled={cargando}>
-                            {cargando ? <Spinner animation="border" size="sm" /> : (ordenEditando ? 'Guardar Cambios' : 'Crear Orden')}
+                            {cargando ? <Spinner animation="border" size="sm" /> : (ordenEditando ? 'Guardar Cambios' : 'Ingresar Vehículo')}
                         </Button>
                     </Modal.Footer>
                 </Form>
@@ -300,9 +319,9 @@ export default function OrdenModal({ show, handleClose, onOrdenSaved, ordenEdita
 
             <ConfirmModal
                 show={showConfirmSinMecanico}
-                title="Aviso de Asignación"
-                message="Esta orden pasará a 'Listo para Entregar' pero no tiene mecánico asignado. ¿Deseas guardar de todos modos?"
-                confirmText="Sí, Guardar"
+                title="Atención: Orden sin Mecánico"
+                message="Estás marcando la orden como 'Listo para Entregar' sin haber asignado un mecánico responsable. ¿Deseas guardar de todos modos?"
+                confirmText="Guardar de Todos Modos"
                 confirmVariant="warning"
                 onClose={() => setShowConfirmSinMecanico(false)}
                 onConfirm={handleConfirmarGuardadoSinMecanico}

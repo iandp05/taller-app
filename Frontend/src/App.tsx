@@ -5,9 +5,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // Importamos el Escudo de Captura de Errores Global
 import ErrorBoundary from './components/ErrorBoundary';
 
-// Importamos los Contextos de Autenticación y Tema
+// Importamos el Contexto de Autenticación
 import { AuthProvider, AuthContext } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
 
 // Importamos la barra de navegación
 import Navbar from './components/Navbar';
@@ -67,9 +66,7 @@ function App() {
     return (
         <ErrorBoundary>
             <AuthProvider>
-                <ThemeProvider>
-                    <AppContent />
-                </ThemeProvider>
+                <AppContent />
             </AuthProvider>
         </ErrorBoundary>
     );

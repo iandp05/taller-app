@@ -29,9 +29,23 @@ class OrdenBase(BaseModel):
 
     kilometros: Optional[int] = Field(None, ge=0)
     nivel_combustible: Optional[str] = Field("Desconocido", max_length=50)
-    frente_stereo: Optional[str] = Field("No", max_length=10)
-    rueda_auxilio: Optional[str] = Field("No", max_length=10)
+    frente_stereo: Optional[str] = Field("No", max_length=50)
+    rueda_auxilio: Optional[str] = Field("No", max_length=50)
     codigo_stereo: Optional[str] = Field(None, max_length=50)
+
+    @field_validator("frente_stereo", "rueda_auxilio", mode="before")
+    @classmethod
+    def normalizar_si_no(cls, v):
+        if v is True or v == "true" or v == "True":
+            return "Si"
+        if v is False or v == "false" or v == "False" or v is None:
+            return "No"
+        return str(v)
+
+    @field_validator("vehiculo_id", "mecanico_id", mode="before")
+    @classmethod
+    def convertir_id_str(cls, v):
+        return str(v) if v is not None else None
 
 class OrdenCreate(OrdenBase):
     detalles: List[DetalleOrdenCreate] = []
@@ -45,9 +59,18 @@ class OrdenUpdate(BaseModel):
 
     kilometros: Optional[int] = Field(None, ge=0)
     nivel_combustible: Optional[str] = Field(None, max_length=50)
-    frente_stereo: Optional[str] = Field(None, max_length=10)
-    rueda_auxilio: Optional[str] = Field(None, max_length=10)
+    frente_stereo: Optional[str] = Field(None, max_length=50)
+    rueda_auxilio: Optional[str] = Field(None, max_length=50)
     codigo_stereo: Optional[str] = Field(None, max_length=50)
+
+    @field_validator("frente_stereo", "rueda_auxilio", mode="before")
+    @classmethod
+    def normalizar_si_no_update(cls, v):
+        if v is True or v == "true" or v == "True":
+            return "Si"
+        if v is False or v == "false" or v == "False" or v is None:
+            return "No"
+        return str(v)
 
 class OrdenResponse(OrdenBase):
     id: str
@@ -58,6 +81,11 @@ class OrdenResponse(OrdenBase):
     cliente: Optional[ClienteResponse] = None
     mecanico: Optional[UsuarioResponse] = None
     detalles: List[DetalleOrdenResponse] = []
+
+    @field_validator("id", "cliente_id", mode="before")
+    @classmethod
+    def convertir_id_str_response(cls, v):
+        return str(v) if v is not None else None
 
     class Config:
         from_attributes = True

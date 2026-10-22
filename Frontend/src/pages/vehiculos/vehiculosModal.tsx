@@ -137,7 +137,7 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
                                     {...register('cliente_id', { required: 'Debes seleccionar un cliente.' })}
                                     isInvalid={!!errors.cliente_id}
                                 >
-                                    <option value="">Selecciona un cliente...</option>
+                                    <option value="">Escribe o selecciona un cliente...</option>
                                     {(Array.isArray(clientes) ? clientes : []).map(c => (
                                         <option key={c.id} value={c.id}>
                                             {c.nombre} ({c.telefono})
@@ -176,19 +176,22 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
                         <Col md={6}>
                             <Form.Group>
                                 <Form.Label>Marca *</Form.Label>
-                                <Form.Select
-                                    {...register('marca', { required: 'Selecciona una marca.' })}
+                                <Form.Control
+                                    type="text"
+                                    list="marcas-datalist"
+                                    placeholder="Escribe o busca una marca..."
+                                    {...register('marca', { required: 'Escribe o selecciona una marca.' })}
                                     onChange={(e) => {
                                         setValue('marca', e.target.value);
                                         setValue('modelo', '');
                                     }}
                                     isInvalid={!!errors.marca}
-                                >
-                                    <option value="">Selecciona marca...</option>
+                                />
+                                <datalist id="marcas-datalist">
                                     {Object.keys(catalogo).map(m => (
-                                        <option key={m} value={m}>{m}</option>
+                                        <option key={m} value={m} />
                                     ))}
-                                </Form.Select>
+                                </datalist>
                                 <Form.Control.Feedback type="invalid">
                                     {errors.marca?.message}
                                 </Form.Control.Feedback>
@@ -198,16 +201,18 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
                         <Col md={6}>
                             <Form.Group>
                                 <Form.Label>Modelo *</Form.Label>
-                                <Form.Select
-                                    {...register('modelo', { required: 'Selecciona un modelo.' })}
-                                    disabled={!marcaSeleccionada}
+                                <Form.Control
+                                    type="text"
+                                    list="modelos-datalist"
+                                    placeholder="Escribe o busca un modelo..."
+                                    {...register('modelo', { required: 'Escribe o selecciona un modelo.' })}
                                     isInvalid={!!errors.modelo}
-                                >
-                                    <option value="">Selecciona modelo...</option>
+                                />
+                                <datalist id="modelos-datalist">
                                     {marcaSeleccionada && catalogo[marcaSeleccionada]?.map(mod => (
-                                        <option key={mod} value={mod}>{mod}</option>
+                                        <option key={mod} value={mod} />
                                     ))}
-                                </Form.Select>
+                                </datalist>
                                 <Form.Control.Feedback type="invalid">
                                     {errors.modelo?.message}
                                 </Form.Control.Feedback>

@@ -120,8 +120,8 @@ export interface OrdenCreate {
     detalles: DetalleOrdenCreate[];
     kilometros?: number;
     nivel_combustible?: string;
-    frente_stereo?: boolean;
-    rueda_auxilio?: boolean;
+    frente_stereo?: boolean | string;
+    rueda_auxilio?: boolean | string;
     codigo_stereo?: string;
 }
 
