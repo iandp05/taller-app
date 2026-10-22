@@ -1,14 +1,12 @@
-// Frontend/src/pages/presupuestos/PresupuestosPage.tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Badge, Alert } from 'react-bootstrap';
 import { Presupuesto, Vehiculo, Cliente } from '../../types';
 import { getPresupuestos, deletePresupuesto } from '../../api/presupuestosApi';
 import { getVehiculos } from '../../api/vehiculosApi';
 import { getClientes } from '../../api/clientesApi';
 import PresupuestoModal from './PresupuestoModal';
-import PresupuestoPdfModal from './PresupuestoPDFModal';
+import PresupuestoPDFModal from './PresupuestoPDFModal'; 
 import ConfirmModal from '../../components/ConfirmModal';
-import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 export default function PresupuestosPage() {
     const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
@@ -18,67 +16,64 @@ export default function PresupuestosPage() {
     const [showModal, setShowModal] = useState(false);
     const [presupuestoSeleccionado, setPresupuestoSeleccionado] = useState<Presupuesto | null>(null);
 
-    const [showPdfModal, setShowPdfModal] = useState(false);
-    const [pdfPresupuestoId, setPdfPresupuestoId] = useState<string | number | null>(null);
+    const [showPDFModal, setShowPDFModal] = useState(false);
+    const [pdfPresupuestoId, setPdfPresupuestoId] = useState<number | null>(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [presupuestoIdAEliminar, setPresupuestoIdAEliminar] = useState<string | number | null>(null);
+    const [presupuestoIdAEliminar, setPresupuestoIdAEliminar] = useState<number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+    // Estado único para la búsqueda global
     const [busqueda, setBusqueda] = useState('');
+    
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 5;
 
-    const cargarDatos = useCallback(async () => {
+    const cargarDatos = async () => {
         try {
             const [presupuestosData, vehiculosData, clientesData] = await Promise.all([
                 getPresupuestos(),
                 getVehiculos(),
                 getClientes()
             ]);
-            const lista = Array.isArray(presupuestosData) ? presupuestosData : [];
-            setPresupuestos(lista.sort((a, b) => String(b.id).localeCompare(String(a.id))));
-            setVehiculos(Array.isArray(vehiculosData) ? vehiculosData : []);
-            setClientes(Array.isArray(clientesData) ? clientesData : []);
+            setPresupuestos(presupuestosData.sort((a, b) => b.id - a.id));
+            setVehiculos(vehiculosData);
+            setClientes(clientesData);
         } catch (error) {
             console.error("Error al obtener los datos:", error);
         }
-    }, []);
+    };
 
     useEffect(() => {
         cargarDatos();
-    }, [cargarDatos]);
+    }, []);
 
-    useAutoRefresh(cargarDatos, 5000);
-
+    // Volver a la página 1 si se modifica la búsqueda
     useEffect(() => {
         setPaginaActual(1);
     }, [busqueda]);
 
-    const getVehiculo = (id: string | number) => (Array.isArray(vehiculos) ? vehiculos : []).find(v => String(v.id) === String(id));
-    const getCliente = (id: string | number) => (Array.isArray(clientes) ? clientes : []).find(c => String(c.id) === String(id));
-
-    const getBadgeVariant = (estado: string) => {
-        switch (estado) {
-            case 'Emitido': return 'primary';
-            case 'Aprobado': return 'success';
-            case 'Rechazado': return 'danger';
-            default: return 'secondary';
-        }
+    const getVehiculo = (id: number) => vehiculos.find(v => v.id === id);
+    const getCliente = (presupuesto: Presupuesto) => {
+        if (presupuesto.cliente) return presupuesto.cliente;
+        if (presupuesto.cliente_id) return clientes.find(c => c.id === presupuesto.cliente_id);
+        const v = getVehiculo(presupuesto.vehiculo_id);
+        if (v) return clientes.find(c => c.id === v.cliente_id);
+        return null;
     };
 
-    const listaPresupuestos = Array.isArray(presupuestos) ? presupuestos : [];
-    const presupuestosFiltrados = listaPresupuestos.filter(p => {
-        const v = getVehiculo(p.vehiculo_id);
-        const c = getCliente(p.cliente_id);
-        const term = busqueda.toLowerCase();
+    // Lógica de filtrado unificada
+    const presupuestosFiltrados = presupuestos.filter(p => {
+        const termino = busqueda.toLowerCase();
+        const vehiculo = getVehiculo(p.vehiculo_id);
+        const cliente = getCliente(p);
 
-        return (
-            String(p.id).toLowerCase().includes(term) ||
-            p.estado.toLowerCase().includes(term) ||
-            (v && (v.patente.toLowerCase().includes(term) || v.modelo.toLowerCase().includes(term))) ||
-            (c && c.nombre.toLowerCase().includes(term))
-        );
+        const matchId = p.id.toString().includes(termino);
+        const matchEstado = p.estado.toLowerCase().includes(termino);
+        const matchPatente = vehiculo ? vehiculo.patente.toLowerCase().includes(termino) : false;
+        const matchCliente = cliente ? cliente.nombre.toLowerCase().includes(termino) : false;
+
+        return matchId || matchEstado || matchPatente || matchCliente;
     });
 
     const indiceUltimoItem = paginaActual * itemsPorPagina;
@@ -86,63 +81,62 @@ export default function PresupuestosPage() {
     const presupuestosPaginados = presupuestosFiltrados.slice(indicePrimerItem, indiceUltimoItem);
     const totalPaginas = Math.ceil(presupuestosFiltrados.length / itemsPorPagina);
 
-    const handleNuevoPresupuesto = () => { setPresupuestoSeleccionado(null); setShowModal(true); };
-    const handleEditarPresupuesto = (presupuesto: Presupuesto) => { setPresupuestoSeleccionado(presupuesto); setShowModal(true); };
+    const handleNuevo = () => { setPresupuestoSeleccionado(null); setShowModal(true); };
+    const handleEditar = (presupuesto: Presupuesto) => { setPresupuestoSeleccionado(presupuesto); setShowModal(true); };
     
-    const handleVerPDF = (id: string | number) => {
+    const handleVerPDF = (id: number) => {
         setPdfPresupuestoId(id);
-        setShowPdfModal(true);
+        setShowPDFModal(true);
     };
 
-    const handleWhatsApp = (presupuesto: Presupuesto) => {
-        const cliente = getCliente(presupuesto.cliente_id);
-        const vehiculo = getVehiculo(presupuesto.vehiculo_id);
-        const telefono = cliente?.telefono?.replace(/[^0-9]/g, '') || '';
-        const mensaje = encodeURIComponent(
-            `Hola ${cliente?.nombre || 'Cliente'}, te enviamos el Presupuesto #${String(presupuesto.id).slice(0, 8)} para tu vehículo ${vehiculo ? vehiculo.marca + ' ' + vehiculo.modelo : ''} (${vehiculo?.patente || ''}) por un monto total de $${presupuesto.total.toLocaleString('es-AR')}. ¡Quedamos atentos a tus comentarios!`
-        );
-        window.open(`https://wa.me/${telefono}?text=${mensaje}`, '_blank');
-    };
-
-    const handleEliminarClick = (id: string | number) => {
+    const handleEliminarClick = (id: number) => {
         setPresupuestoIdAEliminar(id);
         setShowConfirmModal(true);
     };
 
     const handleConfirmarEliminacion = async () => {
         if (presupuestoIdAEliminar === null) return;
-
         try {
             await deletePresupuesto(presupuestoIdAEliminar);
             setShowConfirmModal(false);
             setPresupuestoIdAEliminar(null);
             cargarDatos();
         } catch (error) {
-            console.error("Error al eliminar el presupuesto:", error);
+            console.error("Error al eliminar:", error);
             setErrorMsg("No se pudo eliminar el presupuesto.");
+        }
+    };
+
+    const getEstadoBadge = (estado: string) => {
+        switch (estado) {
+            case 'Emitido': return <Badge bg="warning" text="dark">Emitido</Badge>;
+            case 'Aprobado': return <Badge bg="success">Aprobado</Badge>;
+            case 'Rechazado': return <Badge bg="danger">Rechazado</Badge>;
+            default: return <Badge bg="secondary">{estado}</Badge>;
         }
     };
 
     return (
         <div>
             {errorMsg && <Alert variant="danger" dismissible onClose={() => setErrorMsg(null)} className="mb-3">{errorMsg}</Alert>}
-
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 mb-md-4">
-                <h2 className="mb-0">Gestión de Presupuestos</h2>
-                <Button variant="success" onClick={handleNuevoPresupuesto} className="w-100 w-sm-auto">
+                <h2 className="mb-0">Presupuestos y Cotizaciones</h2>
+                <Button variant="success" onClick={handleNuevo} className="w-100 w-sm-auto">
                     Nuevo Presupuesto
                 </Button>
             </div>
 
             <Card className="shadow-sm">
                 <Card.Body>
-                    <Row className="mb-3">
-                        <Col md={6}>
+                    
+                    {/* ZONA DE BÚSQUEDA UNIFICADA */}
+                    <Row className="mb-3 align-items-center">
+                        <Col md={8}>
                             <InputGroup>
                                 <InputGroup.Text>Buscar</InputGroup.Text>
                                 <Form.Control
                                     type="text"
-                                    placeholder="Nº presupuesto, cliente, patente o estado..."
+                                    placeholder="Nº presupuesto, patente, cliente o estado..."
                                     value={busqueda}
                                     onChange={(e) => setBusqueda(e.target.value)}
                                 />
@@ -150,48 +144,58 @@ export default function PresupuestosPage() {
                         </Col>
                     </Row>
 
-                    <Table striped hover responsive className="mb-0">
+                    <Table striped hover responsive className="mb-0 align-middle">
                         <thead className="table-dark">
                             <tr>
                                 <th>Nº Presupuesto</th>
-                                <th>Fecha Emisión</th>
+                                <th>Fecha</th>
                                 <th>Cliente</th>
                                 <th>Vehículo</th>
+                                <th>Total</th> 
                                 <th>Estado</th>
-                                <th className="text-end">Monto Total</th>
-                                <th className="text-center">Acciones</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {presupuestosPaginados.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="text-center py-4 text-muted">
-                                        No se encontraron presupuestos registrados.
+                                        No se encontraron presupuestos que coincidan con la búsqueda.
                                     </td>
                                 </tr>
                             ) : (
                                 presupuestosPaginados.map((presupuesto) => {
                                     const vehiculo = getVehiculo(presupuesto.vehiculo_id);
-                                    const cliente = getCliente(presupuesto.cliente_id);
+                                    const cliente = getCliente(presupuesto);
+
                                     return (
                                         <tr key={presupuesto.id}>
-                                            <td className="fw-bold">#{String(presupuesto.id).slice(0, 8)}</td>
+                                            <td className="fw-bold">#{presupuesto.id.toString().padStart(4, '0')}</td>
                                             <td>{new Date(presupuesto.fecha_creacion).toLocaleDateString()}</td>
-                                            <td>{cliente ? cliente.nombre : 'Cliente Desconocido'}</td>
-                                            <td>{vehiculo ? `${vehiculo.patente} (${vehiculo.marca} ${vehiculo.modelo})` : 'Vehículo no asignado'}</td>
-                                            <td>
-                                                <Badge bg={getBadgeVariant(presupuesto.estado)}>
-                                                    {presupuesto.estado}
-                                                </Badge>
+                                            
+                                            <td className="fw-semibold text-truncate" style={{ maxWidth: '150px' }}>
+                                                {cliente?.nombre || 'Sin Cliente'}
                                             </td>
-                                            <td className="text-end fw-bold">${presupuesto.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-                                            <td className="text-center">
-                                                <Button variant="outline-success" size="sm" className="me-1 mb-1" onClick={() => handleWhatsApp(presupuesto)} title="Enviar por WhatsApp">
-                                                    📱 WhatsApp
-                                                </Button>
-                                                <Button variant="outline-dark" size="sm" className="me-1 mb-1" onClick={() => handleVerPDF(presupuesto.id)}>Imprimir</Button>
-                                                <Button variant="outline-primary" size="sm" className="me-1 mb-1" onClick={() => handleEditarPresupuesto(presupuesto)}>Editar</Button>
-                                                <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarClick(presupuesto.id)}>Borrar</Button>
+
+                                            <td>
+                                                {vehiculo ? (
+                                                    <div>
+                                                        <Badge bg="secondary" className="me-1">{vehiculo.patente}</Badge>
+                                                        <small className="text-muted d-block">{vehiculo.marca} {vehiculo.modelo}</small>
+                                                    </div>
+                                                ) : 'Desconocido'}
+                                            </td>
+
+                                            <td className="fw-bold text-success">
+                                                ${presupuesto.total.toLocaleString()}
+                                            </td>
+                                            
+                                            <td>{getEstadoBadge(presupuesto.estado)}</td>
+                                            
+                                            <td>
+                                                <Button variant="outline-success" size="sm" className="me-2 mb-1" onClick={() => handleVerPDF(presupuesto.id)}>Imprimir</Button>
+                                                <Button variant="outline-primary" size="sm" className="me-2 mb-1" onClick={() => handleEditar(presupuesto)}>Ver / Editar</Button>
+                                                <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarClick(presupuesto.id)}>Eliminar</Button>
                                             </td>
                                         </tr>
                                     );
@@ -216,23 +220,13 @@ export default function PresupuestosPage() {
                 </Card.Body>
             </Card>
 
-            <PresupuestoModal
-                show={showModal}
-                handleClose={() => setShowModal(false)}
-                onPresupuestoSaved={cargarDatos}
-                presupuestoEditando={presupuestoSeleccionado}
-            />
-
-            <PresupuestoPdfModal
-                show={showPdfModal}
-                handleClose={() => setShowPdfModal(false)}
-                presupuestoId={pdfPresupuestoId as any}
-            />
+            <PresupuestoModal show={showModal} handleClose={() => setShowModal(false)} onPresupuestoSaved={cargarDatos} presupuestoEditando={presupuestoSeleccionado} />
+            <PresupuestoPDFModal show={showPDFModal} handleClose={() => setShowPDFModal(false)} presupuestoId={pdfPresupuestoId} />
 
             <ConfirmModal
                 show={showConfirmModal}
                 title="Confirmar Eliminación"
-                message="¿Estás seguro de que deseas eliminar permanentemente este presupuesto?"
+                message="¿Estás seguro de que deseas eliminar este presupuesto?"
                 confirmText="Sí, Eliminar"
                 confirmVariant="danger"
                 onClose={() => setShowConfirmModal(false)}

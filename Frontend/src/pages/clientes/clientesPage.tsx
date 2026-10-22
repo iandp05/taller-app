@@ -1,51 +1,51 @@
 // Frontend/src/pages/clientes/clientesPage.tsx
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Alert } from 'react-bootstrap';
 import { Cliente } from '../../types';
 import { getClientes, deleteCliente } from '../../api/clientesApi';
 import ClienteModal from './clienteModal';
 import ConfirmModal from '../../components/ConfirmModal';
-import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 export default function ClientesPage() {
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
 
+    // Estados para controlar el modal flotante de confirmación
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [idClienteAEliminar, setIdClienteAEliminar] = useState<string | number | null>(null);
+    const [idClienteAEliminar, setIdClienteAEliminar] = useState<number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+    // Estados de Búsqueda y Paginación
     const [busqueda, setBusqueda] = useState('');
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 5;
 
-    const cargarClientes = useCallback(async () => {
+    const cargarClientes = async () => {
         try {
             const data = await getClientes();
-            setClientes(Array.isArray(data) ? data : []);
+            setClientes(data);
         } catch (error) {
             console.error("Error al obtener clientes:", error);
         }
-    }, []);
+    };
 
     useEffect(() => {
         cargarClientes();
-    }, [cargarClientes]);
-
-    useAutoRefresh(cargarClientes, 5000);
+    }, []);
 
     useEffect(() => {
         setPaginaActual(1);
     }, [busqueda]);
 
-    const listaClientes = Array.isArray(clientes) ? clientes : [];
-    const clientesFiltrados = listaClientes.filter(c =>
-        (c.nombre && c.nombre.toLowerCase().includes(busqueda.toLowerCase())) ||
+    // Filtrado
+    const clientesFiltrados = clientes.filter(c => 
+        c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
         (c.telefono && c.telefono.toLowerCase().includes(busqueda.toLowerCase())) ||
         (c.email && c.email.toLowerCase().includes(busqueda.toLowerCase()))
     );
 
+    // Paginación
     const indiceUltimoItem = paginaActual * itemsPorPagina;
     const indicePrimerItem = indiceUltimoItem - itemsPorPagina;
     const clientesPaginados = clientesFiltrados.slice(indicePrimerItem, indiceUltimoItem);
@@ -54,11 +54,13 @@ export default function ClientesPage() {
     const handleNuevoCliente = () => { setClienteSeleccionado(null); setShowModal(true); };
     const handleEditarCliente = (cliente: Cliente) => { setClienteSeleccionado(cliente); setShowModal(true); };
     
-    const handleEliminarClienteClick = (id: string | number) => {
+    // Abre el modal corporativo en lugar del aviso nativo
+    const handleEliminarClienteClick = (id: number) => {
         setIdClienteAEliminar(id);
         setShowConfirmModal(true);
     };
 
+    // Ejecuta la baja real una vez que el usuario confirma en el modal
     const handleConfirmarEliminacion = async () => {
         if (idClienteAEliminar === null) return;
         
@@ -119,7 +121,7 @@ export default function ClientesPage() {
                             ) : (
                                 clientesPaginados.map((cliente) => (
                                     <tr key={cliente.id}>
-                                        <td>{String(cliente.id).slice(0, 8)}</td>
+                                        <td>{cliente.id}</td>
                                         <td className="fw-bold">{cliente.nombre}</td>
                                         <td>{cliente.telefono}</td>
                                         <td>{cliente.email || '-'}</td>
@@ -151,6 +153,7 @@ export default function ClientesPage() {
 
             <ClienteModal show={showModal} handleClose={() => setShowModal(false)} onClientSaved={cargarClientes} clienteEditando={clienteSeleccionado} />
 
+            {/* Modal de confirmación estilizado con Bootstrap */}
             <ConfirmModal
                 show={showConfirmModal}
                 title="Confirmar Eliminación"

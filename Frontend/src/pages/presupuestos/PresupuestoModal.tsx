@@ -21,153 +21,198 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
     const [cargando, setCargando] = useState(false);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    const [vehiculoId, setVehiculoId] = useState<string | number>('');
-    const [mecanicoId, setMecanicoId] = useState<string | number>('');
+    // Estados base
+    const [vehiculoId, setVehiculoId] = useState<number>(0);
+    const [mecanicoId, setMecanicoId] = useState<number>(0);
     const [estado, setEstado] = useState('Emitido');
     const [validezDias, setValidezDias] = useState('15 días');
     const [condicionesPago, setCondicionesPago] = useState('Efectivo / Transferencia');
     
+    // Lista final de ítems
     const [detalles, setDetalles] = useState<DetallePresupuestoCreate[]>([]);
     
-    const [prodId, setProdId] = useState<string | number>('');
+    // Estados para ZONA 1: Repuestos
+    const [prodId, setProdId] = useState<number | ''>('');
     const [prodCant, setProdCant] = useState<number>(1);
     const [prodPrecio, setProdPrecio] = useState<number | string>('');
 
+    // Estados para ZONA 2: Mano de Obra
     const [moDesc, setMoDesc] = useState('Mano de Obra');
-    const [moCant, setMoCant] = useState<number>(1);
     const [moPrecio, setMoPrecio] = useState<number | string>('');
+
+    const reordenarDetalles = (lista: DetallePresupuestoCreate[]) => {
+        return [...lista].sort((a, b) => {
+            const isRepuestoA = a.producto_id !== undefined && a.producto_id !== null;
+            const isRepuestoB = b.producto_id !== undefined && b.producto_id !== null;
+            
+            if (isRepuestoA && !isRepuestoB) return -1;
+            if (!isRepuestoA && isRepuestoB) return 1;
+            return 0;
+        });
+    };
 
     useEffect(() => {
         if (show) {
-            cargarCatalogos();
             setErrorMsg(null);
-
-            if (presupuestoEditando) {
-                setVehiculoId(presupuestoEditando.vehiculo_id);
-                setMecanicoId(presupuestoEditando.mecanico_id || '');
-                setEstado(presupuestoEditando.estado);
-                setValidezDias(presupuestoEditando.validez_dias);
-                setCondicionesPago(presupuestoEditando.condiciones_pago);
-                setDetalles(presupuestoEditando.detalles.map(d => ({
-                    producto_id: d.producto_id || undefined,
-                    descripcion: d.descripcion,
-                    cantidad: d.cantidad,
-                    precio_unitario: d.precio_unitario
-                })));
-            } else {
-                setVehiculoId('');
-                setMecanicoId('');
-                setEstado('Emitido');
-                setValidezDias('15 días');
-                setCondicionesPago('Efectivo / Transferencia');
-                setDetalles([]);
-            }
+            getVehiculos().then(setVehiculos).catch(console.error);
+            getProductos().then(setProductos).catch(console.error);
+            getUsuarios().then(setEmpleados).catch(console.error);
         }
-    }, [show, presupuestoEditando]);
+    }, [show]);
 
-    const cargarCatalogos = async () => {
-        try {
-            const [vehs, prods, emps] = await Promise.all([
-                getVehiculos(),
-                getProductos(),
-                getUsuarios()
-            ]);
-            setVehiculos(Array.isArray(vehs) ? vehs : []);
-            setProductos(Array.isArray(prods) ? prods : []);
-            setEmpleados(Array.isArray(emps) ? emps : []);
-        } catch (err) {
-            console.error("Error al cargar datos para el presupuesto:", err);
+    useEffect(() => {
+        if (presupuestoEditando) {
+            setVehiculoId(presupuestoEditando.vehiculo_id);
+            setMecanicoId(presupuestoEditando.mecanico_id || 0);
+            setEstado(presupuestoEditando.estado);
+            setValidezDias(presupuestoEditando.validez_dias);
+            setCondicionesPago(presupuestoEditando.condiciones_pago);
+            setDetalles(reordenarDetalles(presupuestoEditando.detalles || []));
+        } else {
+            setVehiculoId(0);
+            setMecanicoId(0);
+            setEstado('Emitido');
+            setValidezDias('15 días');
+            setCondicionesPago('Efectivo / Transferencia');
+            setDetalles([]);
         }
-    };
-
-    const handleSelectProducto = (pId: string | number) => {
-        setProdId(pId);
-        const prod = (Array.isArray(productos) ? productos : []).find(p => String(p.id) === String(pId));
-        if (prod) {
-            setProdPrecio(prod.precio);
-        }
-    };
-
-    const handleAgregarRepuesto = () => {
-        if (!prodId) {
-            setErrorMsg("Debes seleccionar un repuesto.");
-            return;
-        }
-        const prod = (Array.isArray(productos) ? productos : []).find(p => String(p.id) === String(prodId));
-        if (!prod) return;
-
-        const precio = Number(prodPrecio) || prod.precio;
-
-        setDetalles([...detalles, {
-            producto_id: prod.id,
-            descripcion: prod.nombre,
-            cantidad: prodCant,
-            precio_unitario: precio
-        }]);
-
+        
         setProdId('');
         setProdCant(1);
         setProdPrecio('');
-        setErrorMsg(null);
-    };
-
-    const handleAgregarManoDeObra = () => {
-        if (!moDesc.trim()) {
-            setErrorMsg("Escribe una descripción para la mano de obra.");
-            return;
-        }
-        const precio = Number(moPrecio);
-        if (isNaN(precio) || precio <= 0) {
-            setErrorMsg("Ingresa un precio válido para la mano de obra.");
-            return;
-        }
-
-        setDetalles([...detalles, {
-            producto_id: undefined,
-            descripcion: moDesc,
-            cantidad: moCant,
-            precio_unitario: precio
-        }]);
-
         setMoDesc('Mano de Obra');
-        setMoCant(1);
         setMoPrecio('');
         setErrorMsg(null);
+    }, [presupuestoEditando, show]);
+
+    const handleProductoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const id = e.target.value;
+        setProdId(id ? Number(id) : '');
+        
+        if (id) {
+            const producto = productos.find(p => p.id === Number(id));
+            if (producto) setProdPrecio(producto.precio);
+        } else {
+            setProdPrecio('');
+        }
     };
 
-    const handleEliminarDetalle = (index: number) => {
-        setDetalles(detalles.filter((_, i) => i !== index));
-    };
-
-    const totalGeneral = detalles.reduce((sum, item) => sum + (item.cantidad * item.precio_unitario), 0);
-
-    const handleGuardar = async () => {
-        if (!vehiculoId) {
-            setErrorMsg("Debes seleccionar un vehículo obligatoriamente.");
+    const agregarRepuesto = () => {
+        setErrorMsg(null);
+        if (prodId === '') {
+            setErrorMsg("Por favor selecciona un repuesto del inventario.");
             return;
         }
+        const cant = Number(prodCant);
+        const prec = Number(prodPrecio);
+
+        if (isNaN(cant) || cant <= 0) {
+            setErrorMsg("La cantidad del repuesto debe ser mayor a 0.");
+            return;
+        }
+        if (isNaN(prec) || prec < 0) {
+            setErrorMsg("El precio unitario no puede ser negativo.");
+            return;
+        }
+        
+        const producto = productos.find(p => p.id === prodId);
+        if (!producto) return;
+
+        const nuevosDetalles = [...detalles];
+        const indexExistente = nuevosDetalles.findIndex(d => d.producto_id === producto.id);
+
+        if (indexExistente >= 0) {
+            nuevosDetalles[indexExistente].cantidad += cant;
+            nuevosDetalles[indexExistente].precio_unitario = prec;
+        } else {
+            nuevosDetalles.push({
+                producto_id: producto.id,
+                descripcion: producto.nombre,
+                cantidad: cant,
+                precio_unitario: prec
+            });
+        }
+        
+        setDetalles(reordenarDetalles(nuevosDetalles));
+        setProdId('');
+        setProdCant(1);
+        setProdPrecio('');
+    };
+
+    const agregarManoObra = () => {
+        setErrorMsg(null);
+        if (!moDesc.trim()) {
+            setErrorMsg("Por favor describe la tarea o mano de obra.");
+            return;
+        }
+        const prec = Number(moPrecio);
+        if (moPrecio === '' || isNaN(prec) || prec <= 0) {
+            setErrorMsg("El precio de la mano de obra debe ser mayor a 0.");
+            return;
+        }
+
+        const nuevosDetalles = [...detalles];
+        const indexExistente = nuevosDetalles.findIndex(
+            d => !d.producto_id && d.descripcion.trim().toLowerCase() === moDesc.trim().toLowerCase()
+        );
+
+        if (indexExistente >= 0) {
+            nuevosDetalles[indexExistente].precio_unitario += prec;
+        } else {
+            nuevosDetalles.push({
+                producto_id: null,
+                descripcion: moDesc.trim(),
+                cantidad: 1,
+                precio_unitario: prec
+            });
+        }
+
+        setDetalles(reordenarDetalles(nuevosDetalles));
+        setMoDesc('Mano de Obra');
+        setMoPrecio('');
+    };
+
+    const quitarItem = (index: number) => {
+        const nuevosDetalles = [...detalles];
+        nuevosDetalles.splice(index, 1);
+        setDetalles(nuevosDetalles);
+    };
+
+    const totalPresupuesto = detalles.reduce((acc, item) => acc + (item.cantidad * item.precio_unitario), 0);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMsg(null);
+
+        if (vehiculoId === 0) {
+            setErrorMsg("Por favor selecciona un vehículo.");
+            return;
+        }
+
         if (detalles.length === 0) {
             setErrorMsg("Debes agregar al menos un ítem al presupuesto.");
             return;
         }
 
-        const vehiculoSeleccionado = (Array.isArray(vehiculos) ? vehiculos : []).find(v => String(v.id) === String(vehiculoId));
-        if (!vehiculoSeleccionado) {
-            setErrorMsg("Vehículo inválido.");
+        if (totalPresupuesto < 0) {
+            setErrorMsg("El total estimado no puede ser negativo.");
             return;
         }
 
-        setCargando(true);
-        setErrorMsg(null);
+        const vehiculoObj = vehiculos.find(v => v.id === vehiculoId);
+        if (!vehiculoObj) return;
+
+        if (cargando) return;
+        setCargando(true); 
 
         const presupuestoData: PresupuestoCreate = {
-            vehiculo_id: vehiculoId,
-            cliente_id: vehiculoSeleccionado.cliente_id,
-            mecanico_id: mecanicoId || undefined,
+            vehiculo_id: Number(vehiculoId),
+            cliente_id: vehiculoObj.cliente_id, 
+            mecanico_id: mecanicoId > 0 ? Number(mecanicoId) : undefined,
             estado,
             validez_dias: validezDias,
             condiciones_pago: condicionesPago,
-            detalles
+            detalles: detalles
         };
 
         try {
@@ -178,162 +223,216 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
             }
             onPresupuestoSaved();
             handleClose();
-        } catch (err: any) {
-            console.error("Error al guardar presupuesto:", err);
-            setErrorMsg(err.response?.data?.detail || "No se pudo guardar el presupuesto.");
+        } catch (error: any) {
+            console.error("Error al guardar:", error);
+            const detail = error.response?.data?.detail;
+            if (Array.isArray(detail)) {
+                setErrorMsg(detail.map((d: any) => `${d.loc ? d.loc.join(' -> ') : ''}: ${d.msg}`).join(" | "));
+            } else if (typeof detail === 'string') {
+                setErrorMsg(detail);
+            } else {
+                setErrorMsg("Hubo un error al guardar el presupuesto.");
+            }
         } finally {
             setCargando(false);
         }
     };
 
     return (
-        <Modal show={show} onHide={handleClose} size="xl" backdrop="static" centered>
-            <Modal.Header closeButton>
-                <Modal.Title>{presupuestoEditando ? `Editar Presupuesto #${String(presupuestoEditando.id).slice(0, 8)}` : 'Nuevo Presupuesto'}</Modal.Title>
+        <Modal show={show} onHide={handleClose} size="xl" centered>
+            <Modal.Header closeButton className="bg-light">
+                <Modal.Title>{presupuestoEditando ? 'Actualizar Presupuesto' : 'Crear Nuevo Presupuesto'}</Modal.Title>
             </Modal.Header>
-            <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
-                {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
+            <Modal.Body>
+                {errorMsg && (
+                    <Alert variant="danger" onClose={() => setErrorMsg(null)} dismissible>
+                        {errorMsg}
+                    </Alert>
+                )}
 
-                <Row className="mb-3">
-                    <Col md={6}>
-                        <Form.Group>
-                            <Form.Label>Vehículo *</Form.Label>
-                            <Form.Select value={vehiculoId} onChange={(e) => setVehiculoId(e.target.value)}>
-                                <option value="">Selecciona un vehículo...</option>
-                                {(Array.isArray(vehiculos) ? vehiculos : []).map(v => (
-                                    <option key={v.id} value={v.id}>
-                                        {v.patente} - {v.marca} {v.modelo} (Propietario ID: {String(v.cliente_id).slice(0, 8)})
-                                    </option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                        <Form.Group>
-                            <Form.Label>Mecánico Encargado</Form.Label>
-                            <Form.Select value={mecanicoId} onChange={(e) => setMecanicoId(e.target.value)}>
-                                <option value="">Sin asignar...</option>
-                                {(Array.isArray(empleados) ? empleados : []).map(emp => (
-                                    <option key={emp.id} value={emp.id}>{emp.nombre} ({emp.rol})</option>
-                                ))}
-                            </Form.Select>
-                        </Form.Group>
-                    </Col>
-                </Row>
+                <Form onSubmit={handleSubmit} id="presupuestoForm" noValidate>
+                    <Row className="mb-4">
+                        <Col md={3}>
+                            <Form.Group>
+                                <Form.Label className="fw-bold">Vehículo *</Form.Label>
+                                <Form.Select 
+                                    value={vehiculoId} 
+                                    onChange={(e) => setVehiculoId(Number(e.target.value))}
+                                    disabled={!!presupuestoEditando}
+                                >
+                                    <option value={0}>Selecciona un vehículo...</option>
+                                    {vehiculos.map(v => (
+                                        <option key={v.id} value={v.id}>{v.patente} - {v.marca} {v.modelo}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
 
-                <Form.Group className="mb-3">
-                    <Form.Label>Estado del Presupuesto</Form.Label>
-                    <Form.Select value={estado} onChange={(e) => setEstado(e.target.value)}>
-                        <option value="Emitido">Emitido</option>
-                        <option value="Aprobado">Aprobado por el Cliente</option>
-                        <option value="Rechazado">Rechazado</option>
-                    </Form.Select>
-                </Form.Group>
-
-                <Row className="mb-3">
-                    <Col md={6}>
-                        <Form.Group>
-                            <Form.Label>Validez</Form.Label>
-                            <Form.Control type="text" value={validezDias} onChange={(e) => setValidezDias(e.target.value)} />
-                        </Form.Group>
-                    </Col>
-                    <Col md={6}>
-                        <Form.Group>
-                            <Form.Label>Condiciones de Pago</Form.Label>
-                            <Form.Control type="text" value={condicionesPago} onChange={(e) => setCondicionesPago(e.target.value)} />
-                        </Form.Group>
-                    </Col>
-                </Row>
-
-                <Row className="mb-4">
-                    <Col md={6}>
-                        <div className="p-3 border rounded bg-light h-100">
-                            <h6 className="fw-bold text-primary mb-2">+ Repuesto / Insumo</h6>
-                            <Form.Group className="mb-2">
-                                <Form.Select value={prodId} onChange={(e) => handleSelectProducto(e.target.value)}>
-                                    <option value="">Selecciona repuesto...</option>
-                                    {(Array.isArray(productos) ? productos : []).map(p => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.nombre} (Stock: {p.cantidad}) - ${p.precio}
+                        <Col md={3}>
+                            <Form.Group>
+                                <Form.Label className="fw-bold">Mecánico Responsable</Form.Label>
+                                <Form.Select
+                                    value={mecanicoId}
+                                    onChange={(e) => setMecanicoId(Number(e.target.value))}
+                                >
+                                    <option value={0}>Sin asignar (Opcional)</option>
+                                    {empleados.map(emp => (
+                                        <option key={emp.id} value={emp.id}>
+                                            {emp.nombre} ({emp.rol})
                                         </option>
                                     ))}
                                 </Form.Select>
                             </Form.Group>
-                            <Row className="g-2">
-                                <Col xs={4}>
-                                    <Form.Control type="number" min="1" value={prodCant} onChange={(e) => setProdCant(Number(e.target.value))} placeholder="Cant" />
-                                </Col>
-                                <Col xs={8}>
-                                    <Form.Control type="number" step="0.01" value={prodPrecio} onChange={(e) => setProdPrecio(e.target.value)} placeholder="Precio (Opcional)" />
-                                </Col>
-                            </Row>
-                            <Button variant="outline-primary" size="sm" className="w-100 mt-2" onClick={handleAgregarRepuesto}>
-                                Agregar Repuesto
-                            </Button>
-                        </div>
-                    </Col>
+                        </Col>
 
-                    <Col md={6}>
-                        <div className="p-3 border rounded bg-light h-100 mt-2 mt-md-0">
-                            <h6 className="fw-bold text-success mb-2">+ Mano de Obra / Servicio</h6>
-                            <Form.Group className="mb-2">
-                                <Form.Control type="text" value={moDesc} onChange={(e) => setMoDesc(e.target.value)} placeholder="Descripción del trabajo..." />
+                        <Col md={2}>
+                            <Form.Group>
+                                <Form.Label className="fw-bold">Estado</Form.Label>
+                                <Form.Select value={estado} onChange={(e) => setEstado(e.target.value)}>
+                                    <option value="Emitido">Emitido</option>
+                                    <option value="Aprobado">Aprobado</option>
+                                    <option value="Rechazado">Rechazado</option>
+                                </Form.Select>
                             </Form.Group>
-                            <Row className="g-2">
-                                <Col xs={4}>
-                                    <Form.Control type="number" min="1" value={moCant} onChange={(e) => setMoCant(Number(e.target.value))} placeholder="Cant" />
-                                </Col>
-                                <Col xs={8}>
-                                    <Form.Control type="number" step="0.01" value={moPrecio} onChange={(e) => setMoPrecio(e.target.value)} placeholder="Precio $" />
-                                </Col>
-                            </Row>
-                            <Button variant="outline-success" size="sm" className="w-100 mt-2" onClick={handleAgregarManoDeObra}>
-                                Agregar Servicio
-                            </Button>
-                        </div>
-                    </Col>
-                </Row>
+                        </Col>
 
-                <h5 className="fw-bold mb-2">Detalles del Presupuesto</h5>
-                <Table striped bordered hover responsive>
-                    <thead className="table-dark">
-                        <tr>
-                            <th>Descripción</th>
-                            <th className="text-center">Cantidad</th>
-                            <th className="text-end">Precio Unit.</th>
-                            <th className="text-end">Subtotal</th>
-                            <th className="text-center">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {detalles.length === 0 ? (
-                            <tr>
-                                <td colSpan={5} className="text-center py-3 text-muted">No se agregaron ítems al presupuesto.</td>
-                            </tr>
-                        ) : (
-                            detalles.map((item, index) => (
-                                <tr key={index}>
-                                    <td>{item.descripcion}</td>
-                                    <td className="text-center">{item.cantidad}</td>
-                                    <td className="text-end">${item.precio_unitario.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-                                    <td className="text-end fw-bold">${(item.cantidad * item.precio_unitario).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
-                                    <td className="text-center">
-                                        <Button variant="outline-danger" size="sm" onClick={() => handleEliminarDetalle(index)}>Eliminar</Button>
-                                    </td>
+                        <Col md={2}>
+                            <Form.Group>
+                                <Form.Label className="fw-bold">Validez</Form.Label>
+                                <Form.Control type="text" value={validezDias} onChange={(e) => setValidezDias(e.target.value)} />
+                            </Form.Group>
+                        </Col>
+
+                        <Col md={3}>
+                            <Form.Group>
+                                <Form.Label className="fw-bold">Condiciones de Pago</Form.Label>
+                                <Form.Control type="text" value={condicionesPago} onChange={(e) => setCondicionesPago(e.target.value)} />
+                            </Form.Group>
+                        </Col>
+                    </Row>
+
+                    <div className="border p-4 rounded bg-light mb-4 shadow-sm">
+                        <h6 className="mb-3 text-secondary border-bottom pb-2 fw-bold">Agregar Ítems a la Cotización</h6>
+                        
+                        <Row className="align-items-end mb-3">
+                            <Col md={5}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold text-primary">1. Agregar Repuesto (desde Inventario)</Form.Label>
+                                    <Form.Select value={prodId} onChange={handleProductoChange}>
+                                        <option value="">Seleccionar repuesto...</option>
+                                        {productos.map(p => (
+                                            <option key={p.id} value={p.id}>{p.nombre} (Disp: {p.cantidad})</option>
+                                        ))}
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={2}>
+                                <Form.Group>
+                                    <Form.Label className="small">Cantidad</Form.Label>
+                                    <Form.Control 
+                                        type="number" 
+                                        min="1" 
+                                        value={prodCant} 
+                                        onChange={(e) => setProdCant(Number(e.target.value))} 
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={2}>
+                                <Form.Group>
+                                    <Form.Label className="small">Precio Unit. ($)</Form.Label>
+                                    <Form.Control 
+                                        type="number" 
+                                        step="0.01" 
+                                        value={prodPrecio} 
+                                        onChange={(e) => setProdPrecio(e.target.value)} 
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                                <Button variant="outline-primary" className="w-100 fw-bold" onClick={agregarRepuesto} disabled={!prodId}>
+                                    + Sumar Repuesto
+                                </Button>
+                            </Col>
+                        </Row>
+
+                        <hr className="text-muted opacity-25" />
+
+                        <Row className="align-items-end">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold text-success">2. Agregar Mano de Obra / Otros</Form.Label>
+                                    <Form.Control 
+                                        type="text" 
+                                        value={moDesc} 
+                                        onChange={(e) => setMoDesc(e.target.value)} 
+                                        placeholder="Ej: Mano de obra frenos" 
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                                <Form.Group>
+                                    <Form.Label className="small">Precio Total ($)</Form.Label>
+                                    <Form.Control 
+                                        type="number" 
+                                        step="0.01" 
+                                        value={moPrecio} 
+                                        onChange={(e) => setMoPrecio(e.target.value)} 
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                                <Button variant="outline-success" className="w-100 fw-bold" onClick={agregarManoObra} disabled={!moDesc || !moPrecio}>
+                                    + Sumar Trabajo
+                                </Button>
+                            </Col>
+                        </Row>
+                    </div>
+
+                    {detalles.length > 0 ? (
+                        <Table size="sm" striped bordered hover className="align-middle">
+                            <thead className="table-dark">
+                                <tr>
+                                    <th>Descripción</th>
+                                    <th className="text-center">Cantidad</th>
+                                    <th className="text-end">Precio Unit.</th>
+                                    <th className="text-end">Subtotal</th>
+                                    <th className="text-center">Acción</th>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </Table>
-
-                <div className="d-flex justify-content-end mt-3">
-                    <h4 className="fw-bold text-success">Total: ${totalGeneral.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</h4>
-                </div>
+                            </thead>
+                            <tbody>
+                                {detalles.map((detalle, index) => (
+                                    <tr key={index}>
+                                        <td className={detalle.producto_id ? "fw-normal" : "fw-bold text-success"}>
+                                            {detalle.descripcion}
+                                        </td>
+                                        <td className="text-center">{detalle.cantidad}</td>
+                                        <td className="text-end">${detalle.precio_unitario.toLocaleString()}</td>
+                                        <td className="text-end fw-bold">${(detalle.cantidad * detalle.precio_unitario).toLocaleString()}</td>
+                                        <td className="text-center">
+                                            <Button variant="danger" size="sm" onClick={() => quitarItem(index)}>X</Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colSpan={3} className="text-end fw-bold fs-5">TOTAL ESTIMADO:</td>
+                                    <td className="text-end fw-bold fs-5 text-primary">${totalPresupuesto.toLocaleString()}</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </Table>
+                    ) : (
+                        <div className="text-center text-muted mt-2 mb-2 p-3 border rounded">
+                            Aún no agregaste ítems a este presupuesto.
+                        </div>
+                    )}
+                </Form>
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={handleClose} disabled={cargando}>Cancelar</Button>
-                <Button variant="success" onClick={handleGuardar} disabled={cargando}>
-                    {cargando ? <Spinner animation="border" size="sm" /> : 'Guardar Presupuesto'}
+                <Button variant="primary" type="submit" form="presupuestoForm" disabled={cargando}>
+                    {cargando ? <><Spinner animation="border" size="sm" className="me-2" />Guardando...</> : (presupuestoEditando ? 'Guardar Cambios' : 'Crear Presupuesto')}
                 </Button>
             </Modal.Footer>
         </Modal>

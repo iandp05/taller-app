@@ -14,7 +14,7 @@ interface VehiculosModalProps {
 }
 
 interface VehiculoFormInputs {
-    cliente_id: string | number;
+    cliente_id: number;
     patente: string;
     marca: string;
     modelo: string;
@@ -39,7 +39,7 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
         formState: { errors }
     } = useForm<VehiculoFormInputs>({
         defaultValues: {
-            cliente_id: '',
+            cliente_id: 0,
             patente: '',
             marca: '',
             modelo: '',
@@ -48,146 +48,151 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
         }
     });
 
-    const marcaSeleccionada = watch('marca');
+    const marcaWatch = watch('marca');
 
     useEffect(() => {
-        const cargarDatosModal = async () => {
-            try {
-                const [clientesRes, catalogoRes] = await Promise.all([
-                    getClientes(),
-                    getCatalogoVehiculos()
-                ]);
-                setClientes(Array.isArray(clientesRes) ? clientesRes : []);
-                setCatalogo(catalogoRes || {});
-            } catch (err) {
-                console.error("Error al cargar datos del modal:", err);
-            }
-        };
-
         if (show) {
-            cargarDatosModal();
             setErrorServidor('');
+            getClientes()
+                .then(data => setClientes(data || []))
+                .catch(err => console.error("Error al cargar clientes en modal:", err));
 
-            if (vehiculoEditando) {
-                reset({
-                    cliente_id: vehiculoEditando.cliente_id,
-                    patente: vehiculoEditando.patente,
-                    marca: vehiculoEditando.marca,
-                    modelo: vehiculoEditando.modelo,
-                    anio: vehiculoEditando.anio,
-                    vin: vehiculoEditando.vin || ''
-                });
-            } else {
-                reset({
-                    cliente_id: '',
-                    patente: '',
-                    marca: '',
-                    modelo: '',
-                    anio: new Date().getFullYear(),
-                    vin: ''
-                });
-            }
+            getCatalogoVehiculos()
+                .then(data => setCatalogo(data || {}))
+                .catch(err => console.error("Error al cargar catálogo:", err));
         }
-    }, [show, vehiculoEditando, reset]);
+    }, [show]);
+
+    useEffect(() => {
+        if (vehiculoEditando) {
+            reset({
+                cliente_id: vehiculoEditando.cliente_id,
+                patente: vehiculoEditando.patente,
+                marca: vehiculoEditando.marca,
+                modelo: vehiculoEditando.modelo,
+                anio: vehiculoEditando.anio,
+                vin: vehiculoEditando.vin || ''
+            });
+        } else {
+            reset({
+                cliente_id: 0,
+                patente: '',
+                marca: '',
+                modelo: '',
+                anio: new Date().getFullYear(),
+                vin: ''
+            });
+        }
+    }, [vehiculoEditando, show, reset]);
 
     const onSubmit = async (data: VehiculoFormInputs) => {
         setCargando(true);
         setErrorServidor('');
 
-        try {
-            const vehiculoData: VehiculoCreate = {
-                cliente_id: data.cliente_id,
-                patente: data.patente.toUpperCase().replace(/\s+/g, ''),
-                marca: data.marca,
-                modelo: data.modelo,
-                anio: Number(data.anio),
-                vin: data.vin || undefined
-            };
+        const patenteLimpia = data.patente.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
 
+        const vehiculoData: VehiculoCreate = {
+            patente: patenteLimpia,
+            marca: data.marca.trim(),
+            modelo: data.modelo.trim(),
+            anio: Number(data.anio),
+            vin: data.vin?.trim().toUpperCase() || undefined,
+            cliente_id: Number(data.cliente_id)
+        };
+
+        try {
             if (vehiculoEditando) {
                 await updateVehiculo(vehiculoEditando.id, vehiculoData);
             } else {
                 await createVehiculo(vehiculoData);
             }
-
-            onVehiculoSaved();
-            handleClose();
+            onVehiculoSaved(); 
+            handleClose();     
         } catch (error: any) {
-            console.error("Error al guardar vehículo:", error);
-            setErrorServidor(error.response?.data?.detail || "No se pudo guardar el vehículo.");
+            console.error("Error al guardar el vehículo:", error);
+            const detail = error.response?.data?.detail;
+            if (Array.isArray(detail)) {
+                setErrorServidor(detail.map((d: any) => `${d.loc ? d.loc.join(' -> ') : ''}: ${d.msg}`).join(" | "));
+            } else if (typeof detail === 'string') {
+                setErrorServidor(detail);
+            } else {
+                setErrorServidor("Hubo un error al guardar el vehículo.");
+            }
         } finally {
             setCargando(false);
         }
     };
 
     return (
-        <Modal show={show} onHide={handleClose} backdrop="static" centered size="lg">
+        <Modal show={show} onHide={handleClose} size="lg" centered>
             <Modal.Header closeButton>
-                <Modal.Title>{vehiculoEditando ? 'Editar Vehículo' : 'Nuevo Vehículo'}</Modal.Title>
+                <Modal.Title>{vehiculoEditando ? 'Editar Vehículo' : 'Registrar Vehículo'}</Modal.Title>
             </Modal.Header>
-            <Form onSubmit={handleSubmit(onSubmit)}>
-                <Modal.Body>
-                    {errorServidor && <Alert variant="danger">{errorServidor}</Alert>}
+            <Modal.Body>
+                {errorServidor && (
+                    <Alert variant="danger" dismissible onClose={() => setErrorServidor('')}>
+                        {errorServidor}
+                    </Alert>
+                )}
+
+                <Form onSubmit={handleSubmit(onSubmit)} id="vehiculoForm" noValidate>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-bold">Dueño del Vehículo (Cliente) *</Form.Label>
+                        <Form.Select 
+                            isInvalid={!!errors.cliente_id}
+                            {...register('cliente_id', {
+                                validate: value => Number(value) > 0 || "Por favor selecciona a qué cliente pertenece este vehículo."
+                            })}
+                        >
+                            <option value={0}>Selecciona un cliente...</option>
+                            {clientes.map(c => (
+                                <option key={c.id} value={c.id}>
+                                    {c.nombre} (ID: {c.id})
+                                </option>
+                            ))}
+                        </Form.Select>
+                        <Form.Control.Feedback type="invalid">
+                            {errors.cliente_id?.message}
+                        </Form.Control.Feedback>
+                    </Form.Group>
 
                     <Row className="mb-3">
-                        <Col md={6}>
+                        <Col md={4}>
                             <Form.Group>
-                                <Form.Label>Propietario / Cliente *</Form.Label>
-                                <Form.Select
-                                    {...register('cliente_id', { required: 'Debes seleccionar un cliente.' })}
-                                    isInvalid={!!errors.cliente_id}
-                                >
-                                    <option value="">Escribe o selecciona un cliente...</option>
-                                    {(Array.isArray(clientes) ? clientes : []).map(c => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.nombre} ({c.telefono})
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                                <Form.Control.Feedback type="invalid">
-                                    {errors.cliente_id?.message}
-                                </Form.Control.Feedback>
-                            </Form.Group>
-                        </Col>
-
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Patente / Dominio *</Form.Label>
+                                <Form.Label className="fw-bold">Patente / Dominio *</Form.Label>
                                 <Form.Control
                                     type="text"
-                                    placeholder="Ej: AA123BB o AB123CD"
+                                    placeholder="Ej: AA123BB"
+                                    isInvalid={!!errors.patente}
                                     {...register('patente', {
-                                        required: 'La patente es obligatoria.',
-                                        pattern: {
-                                            value: /^[A-Za-z0-9]{6,10}$/,
-                                            message: 'Ingrese una patente válida sin espacios ni guiones.'
+                                        required: "La patente es obligatoria.",
+                                        validate: value => {
+                                            const clean = value.replace(/[^A-Za-z0-9]/g, '');
+                                            return (clean.length >= 6 && clean.length <= 9) || "La patente debe tener entre 6 y 9 caracteres alfanuméricos.";
                                         }
                                     })}
-                                    isInvalid={!!errors.patente}
                                 />
                                 <Form.Control.Feedback type="invalid">
                                     {errors.patente?.message}
                                 </Form.Control.Feedback>
                             </Form.Group>
                         </Col>
-                    </Row>
 
-                    <Row className="mb-3">
-                        <Col md={6}>
+                        <Col md={4}>
                             <Form.Group>
-                                <Form.Label>Marca *</Form.Label>
-                                <Form.Control
+                                <Form.Label className="fw-bold">Marca *</Form.Label>
+                                <Form.Control 
                                     type="text"
-                                    list="marcas-datalist"
-                                    placeholder="Escribe o busca una marca..."
-                                    {...register('marca', { required: 'Escribe o selecciona una marca.' })}
-                                    onChange={(e) => {
-                                        setValue('marca', e.target.value);
-                                        setValue('modelo', '');
-                                    }}
+                                    placeholder="Ej: Toyota"
                                     isInvalid={!!errors.marca}
+                                    autoComplete="off"
+                                    list="marcas-lista"
+                                    {...register('marca', {
+                                        required: "La marca del vehículo es obligatoria.",
+                                        onChange: () => setValue('modelo', '')
+                                    })}
                                 />
-                                <datalist id="marcas-datalist">
+                                <datalist id="marcas-lista">
                                     {Object.keys(catalogo).map(m => (
                                         <option key={m} value={m} />
                                     ))}
@@ -198,20 +203,24 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
                             </Form.Group>
                         </Col>
 
-                        <Col md={6}>
+                        <Col md={4}>
                             <Form.Group>
-                                <Form.Label>Modelo *</Form.Label>
-                                <Form.Control
+                                <Form.Label className="fw-bold">Modelo *</Form.Label>
+                                <Form.Control 
                                     type="text"
-                                    list="modelos-datalist"
-                                    placeholder="Escribe o busca un modelo..."
-                                    {...register('modelo', { required: 'Escribe o selecciona un modelo.' })}
+                                    placeholder="Ej: Hilux"
                                     isInvalid={!!errors.modelo}
+                                    disabled={!marcaWatch}
+                                    autoComplete="off"
+                                    list="modelos-lista"
+                                    {...register('modelo', {
+                                        required: "El modelo del vehículo es obligatorio."
+                                    })}
                                 />
-                                <datalist id="modelos-datalist">
-                                    {marcaSeleccionada && catalogo[marcaSeleccionada]?.map(mod => (
+                                <datalist id="modelos-lista">
+                                    {marcaWatch && catalogo[marcaWatch] ? catalogo[marcaWatch].map((mod: string) => (
                                         <option key={mod} value={mod} />
-                                    ))}
+                                    )) : null}
                                 </datalist>
                                 <Form.Control.Feedback type="invalid">
                                     {errors.modelo?.message}
@@ -221,18 +230,19 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
                     </Row>
 
                     <Row className="mb-3">
-                        <Col md={6}>
+                        <Col md={4}>
                             <Form.Group>
-                                <Form.Label>Año de Fabricación *</Form.Label>
+                                <Form.Label className="fw-bold">Año *</Form.Label>
                                 <Form.Control
                                     type="number"
-                                    placeholder="Ej: 2018"
-                                    {...register('anio', {
-                                        required: 'El año es obligatorio.',
-                                        min: { value: 1900, message: 'Año inválido.' },
-                                        max: { value: anioActualMax, message: `No puede ser mayor a ${anioActualMax}` }
-                                    })}
                                     isInvalid={!!errors.anio}
+                                    {...register('anio', {
+                                        required: "El año es obligatorio.",
+                                        validate: value => {
+                                            const num = Number(value);
+                                            return (num >= 1900 && num <= anioActualMax) || `El año debe estar entre 1900 y ${anioActualMax}.`;
+                                        }
+                                    })}
                                 />
                                 <Form.Control.Feedback type="invalid">
                                     {errors.anio?.message}
@@ -240,27 +250,24 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
                             </Form.Group>
                         </Col>
 
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label>Nº de Chasis / VIN (Opcional)</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="17 caracteres opcionales..."
-                                    {...register('vin')}
-                                />
-                            </Form.Group>
-                        </Col>
-                    </Row>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleClose} disabled={cargando}>
-                        Cancelar
-                    </Button>
-                    <Button variant="success" type="submit" disabled={cargando}>
-                        {cargando ? <Spinner animation="border" size="sm" /> : (vehiculoEditando ? 'Guardar Cambios' : 'Registrar Vehículo')}
-                    </Button>
-                </Modal.Footer>
-            </Form>
+                            <Col md={8}>
+                                <Form.Group>
+                                    <Form.Label>N° de Chasis / VIN (Opcional)</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        {...register('vin')}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                </Form>
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={handleClose} disabled={cargando}>Cancelar</Button>
+                <Button variant="primary" type="submit" form="vehiculoForm" disabled={cargando}>
+                    {cargando ? <><Spinner animation="border" size="sm" className="me-2" />Guardando...</> : "Guardar"}
+                </Button>
+            </Modal.Footer>
         </Modal>
     );
 }

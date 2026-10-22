@@ -4,9 +4,8 @@ import { Navbar, Nav, Container, Button, Badge } from 'react-bootstrap';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { api } from '../api/axios';
 
-// Importamos la configuración y API
+// 1. Importamos la configuración y API
 import { EMPRESA_CONFIG, formatEmpresaConfig } from '../config/empresaConfig';
 import { getConfiguracion } from '../api/configuracionApi';
 
@@ -16,32 +15,12 @@ export default function AppNavbar() {
     const isOnline = useOnlineStatus();
     const [config, setConfig] = useState(EMPRESA_CONFIG);
     const [expanded, setExpanded] = useState(false);
-    const [syncPendientes, setSyncPendientes] = useState<number>(0);
 
     useEffect(() => {
         if (user) {
             getConfiguracion()
                 .then(data => setConfig(formatEmpresaConfig(data)))
                 .catch(() => setConfig(EMPRESA_CONFIG));
-        }
-    }, [user]);
-
-    useEffect(() => {
-        const checkSyncStatus = async () => {
-            try {
-                const res = await api.get('/sync/estado');
-                if (typeof res.data?.pendientes === 'number') {
-                    setSyncPendientes(res.data.pendientes);
-                }
-            } catch {
-                // Ignore network errors
-            }
-        };
-
-        if (user) {
-            checkSyncStatus();
-            const timer = setInterval(checkSyncStatus, 5000);
-            return () => clearInterval(timer);
         }
     }, [user]);
 
@@ -56,7 +35,7 @@ export default function AppNavbar() {
     };
 
     return (
-        <Navbar expand="lg" expanded={expanded} onToggle={setExpanded} className="mb-3 mb-md-4 shadow-sm py-1 border-bottom bg-body-tertiary">
+        <Navbar bg="light" variant="light" expand="lg" expanded={expanded} onToggle={setExpanded} className="mb-3 mb-md-4 shadow-sm py-1 border-bottom">
             <Container fluid className="px-3 px-md-4">
                 <Navbar.Brand as={Link} to="/" onClick={handleNavLinkClick} className="d-flex align-items-center gap-2 gap-sm-3">
                     <img 
@@ -70,7 +49,7 @@ export default function AppNavbar() {
                             objectFit: 'contain' 
                         }} 
                     />
-                    <span className="fw-bold fs-5 text-truncate" style={{ maxWidth: '200px' }}>{config.nombreComercial}</span>
+                    <span className="fw-bold fs-5 text-dark text-truncate" style={{ maxWidth: '200px' }}>{config.nombreComercial}</span>
                 </Navbar.Brand>
                 
                 <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -106,19 +85,16 @@ export default function AppNavbar() {
                         </Nav.Link>
                     </Nav>
 
-                    {/* Zona del usuario conectado y badge de sincronización */}
+                    {/* Zona del usuario conectado y botón de cerrar sesión */}
                     {user && (
                         <Nav className="ms-auto align-items-center gap-2 gap-md-3 mt-2 mt-lg-0">
-                            {!isOnline ? (
-                                <Badge bg="danger" className="px-2 py-1 fw-bold">🔴 Sin Conexión</Badge>
-                            ) : syncPendientes > 0 ? (
-                                <Badge bg="warning" text="dark" className="px-2 py-1 fw-bold">🟡 Sincronizando ({syncPendientes})</Badge>
+                            {isOnline ? (
+                                <Badge bg="success" className="px-2 py-1 fw-medium">En Línea</Badge>
                             ) : (
-                                <Badge bg="success" className="px-2 py-1 fw-medium">🟢 Sincronizado</Badge>
+                                <Badge bg="warning" text="dark" className="px-2 py-1 fw-bold">Modo Local / Sin Conexión</Badge>
                             )}
-
-                            <span className="small">
-                                Conectado: <strong>{user.nombre}</strong> <span className="text-muted">({user.rol})</span>
+                            <span className="text-secondary small">
+                                Conectado: <strong className="text-dark">{user.nombre}</strong> <span className="text-muted">({user.rol})</span>
                             </span>
                             <Button variant="outline-danger" size="sm" onClick={handleLogout}>
                                 Cerrar Sesión
