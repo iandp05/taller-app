@@ -42,5 +42,10 @@ class VehiculoUpdate(BaseModel):
 class VehiculoResponse(VehiculoBase):
     id: str
 
+    @field_validator("id", "cliente_id", mode="before")
+    @classmethod
+    def convertir_id_vehiculo_str(cls, v):
+        return str(v) if v is not None else None
+
     class Config:
         from_attributes = True

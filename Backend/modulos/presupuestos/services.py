@@ -60,7 +60,7 @@ def create_presupuesto(db: Session, presupuesto: schemas.PresupuestoCreate):
     
     return db_presupuesto
 
-def update_presupuesto(db: Session, presupuesto_id: int, presupuesto_data: schemas.PresupuestoUpdate):
+def update_presupuesto(db: Session, presupuesto_id: str, presupuesto_data: schemas.PresupuestoUpdate):
     db_presupuesto = get_presupuesto(db, presupuesto_id)
     
     if db_presupuesto:
@@ -108,7 +108,7 @@ def update_presupuesto(db: Session, presupuesto_id: int, presupuesto_data: schem
         
     return db_presupuesto
 
-def delete_presupuesto(db: Session, presupuesto_id: int):
+def delete_presupuesto(db: Session, presupuesto_id: str):
     db_presupuesto = get_presupuesto(db, presupuesto_id)
     if db_presupuesto:
         db.delete(db_presupuesto)

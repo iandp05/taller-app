@@ -1,5 +1,5 @@
 # backend/modulos/presupuestos/schemas.py
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 from datetime import datetime
 from modulos.vehiculos.schemas import VehiculoResponse
@@ -19,6 +19,11 @@ class DetallePresupuestoResponse(BaseModel):
     descripcion: str
     cantidad: int
     precio_unitario: float
+
+    @field_validator("id", "presupuesto_id", "producto_id", mode="before")
+    @classmethod
+    def convertir_ids_detalle_presupuesto_str(cls, v):
+        return str(v) if v is not None else None
 
     class Config:
         from_attributes = True
@@ -51,6 +56,11 @@ class PresupuestoResponse(PresupuestoBase):
     cliente: Optional[ClienteResponse] = None
     mecanico: Optional[UsuarioResponse] = None
     detalles: List[DetallePresupuestoResponse] = []
+
+    @field_validator("id", "vehiculo_id", "cliente_id", "mecanico_id", mode="before")
+    @classmethod
+    def convertir_ids_presupuesto_str(cls, v):
+        return str(v) if v is not None else None
 
     class Config:
         from_attributes = True

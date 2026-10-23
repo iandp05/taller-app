@@ -1,5 +1,5 @@
 # backend/modulos/factura/schemas.py
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 from datetime import datetime
 from modulos.vehiculos.schemas import VehiculoResponse
@@ -23,6 +23,11 @@ class DetalleFacturaResponse(BaseModel):
     alicuota_iva: float
     subtotal: float
 
+    @field_validator("id", "factura_id", "producto_id", mode="before")
+    @classmethod
+    def convertir_ids_detalle_str(cls, v):
+        return str(v) if v is not None else None
+
     class Config:
         from_attributes = True
 
@@ -35,6 +40,9 @@ class FacturaBase(BaseModel):
     condicion_venta: str = Field("Contado", max_length=50)
 
 class FacturaCreate(FacturaBase):
+    numero_comprobante: Optional[int] = 1
+    cae: Optional[str] = None
+    cae_vencimiento: Optional[str] = None
     detalles: List[DetalleFacturaCreate] = []
 
 class FacturaUpdate(BaseModel):
@@ -48,7 +56,7 @@ class FacturaUpdate(BaseModel):
 
 class FacturaResponse(FacturaBase):
     id: str
-    numero_comprobante: int
+    numero_comprobante: Optional[int] = 1
     cae: Optional[str] = None
     cae_vencimiento: Optional[str] = None
     fecha_emision: datetime
@@ -59,6 +67,11 @@ class FacturaResponse(FacturaBase):
     cliente: Optional[ClienteResponse] = None
     mecanico: Optional[UsuarioResponse] = None
     detalles: List[DetalleFacturaResponse] = []
+
+    @field_validator("id", "vehiculo_id", "cliente_id", "mecanico_id", mode="before")
+    @classmethod
+    def convertir_ids_factura_str(cls, v):
+        return str(v) if v is not None else None
 
     class Config:
         from_attributes = True

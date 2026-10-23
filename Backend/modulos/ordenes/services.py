@@ -76,7 +76,7 @@ def create_orden(db: Session, orden: schemas.OrdenCreate):
     
     return db_orden
 
-def update_orden(db: Session, orden_id: int, orden_data: schemas.OrdenUpdate):
+def update_orden(db: Session, orden_id: str, orden_data: schemas.OrdenUpdate):
     db_orden = get_orden(db, orden_id)
     
     if db_orden:
@@ -124,7 +124,7 @@ def update_orden(db: Session, orden_id: int, orden_data: schemas.OrdenUpdate):
         
     return db_orden
 
-def delete_orden(db: Session, orden_id: int, reponer_stock: bool = True):
+def delete_orden(db: Session, orden_id: str, reponer_stock: bool = True):
     db_orden = get_orden(db, orden_id)
     
     if db_orden:

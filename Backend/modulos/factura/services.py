@@ -84,7 +84,7 @@ def create_factura(db: Session, factura: schemas.FacturaCreate):
     
     return db_factura
 
-def delete_factura(db: Session, factura_id: int, reponer_stock: bool = True):
+def delete_factura(db: Session, factura_id: str, reponer_stock: bool = True):
     db_factura = get_factura(db, factura_id)
     if db_factura:
         if reponer_stock:

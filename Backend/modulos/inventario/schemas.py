@@ -38,5 +38,10 @@ class ProductoUpdate(BaseModel):
 class ProductoResponse(ProductoBase):
     id: str
 
+    @field_validator("id", mode="before")
+    @classmethod
+    def convertir_id_producto_str(cls, v):
+        return str(v) if v is not None else ""
+
     class Config:
         from_attributes = True
