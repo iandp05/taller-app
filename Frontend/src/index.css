@@ -4,6 +4,7 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 0.935rem;
   color: #212529;
+  overflow-x: hidden;
 }
 
 /* Contenedor principal para PC y Monitores Anchos (Evita que el contenido se estire excesivamente) */
@@ -18,52 +19,61 @@ body {
   padding-bottom: 2rem;
 }
 
-/* Estilos de tablas generales */
-.table {
-  font-size: 0.9rem;
+/* Tablas Responsivas con Scroll Táctil */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 0.375rem;
 }
 
-/* Optimización Responsive para Celulares y Tablets */
+.table {
+  font-size: 0.88rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Modales Responsivos con Scroll Interno */
+.modal-body {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Optimización Responsive para Celulares y Tablets (< 768px) */
 @media (max-width: 768px) {
   h2 {
-    font-size: 1.35rem;
+    font-size: 1.3rem;
   }
 
   /* Entradas de texto táctiles en celular */
   .form-control, .form-select {
-    font-size: 0.95rem;
-    padding: 0.55rem 0.75rem;
-    min-height: 42px;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    min-height: 40px;
   }
 
   /* Botones cómodos para presionar con el pulgar */
   .btn {
-    padding: 0.5rem 0.85rem;
-    font-size: 0.9rem;
-    min-height: 40px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.875rem;
   }
 
   .btn-sm {
-    padding: 0.35rem 0.65rem;
-    font-size: 0.825rem;
-    min-height: 34px;
-  }
-
-  .table-responsive {
-    font-size: 0.875rem;
-    -webkit-overflow-scrolling: touch;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
   }
 
   .modal-dialog {
-    margin: 0.5rem;
-    max-width: calc(100% - 1rem);
+    margin: 0.5rem auto;
+    max-width: 95%;
   }
 
   .modal-body {
-    padding: 1.1rem !important;
+    padding: 1rem !important;
+    max-height: 75vh;
   }
 
   .card-body {
-    padding: 1.15rem !important;
+    padding: 1rem !important;
   }
 }
