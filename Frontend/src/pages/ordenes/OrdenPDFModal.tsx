@@ -12,7 +12,7 @@ import { formatEmpresaConfig } from '../../config/empresaConfig';
 interface OrdenPdfModalProps {
     show: boolean;
     handleClose: () => void;
-    ordenId: number | null;
+    ordenId: string | number | null;
 }
 
 export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfModalProps) {

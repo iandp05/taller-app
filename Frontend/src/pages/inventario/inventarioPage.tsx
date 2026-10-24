@@ -124,7 +124,7 @@ export default function InventarioPage() {
     const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [idProductoAEliminar, setIdProductoAEliminar] = useState<number | null>(null);
+    const [idProductoAEliminar, setIdProductoAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState('');
 
     const [busqueda, setBusqueda] = useState('');
@@ -162,7 +162,7 @@ export default function InventarioPage() {
     const handleNuevoProducto = () => { setProductoSeleccionado(null); setShowModal(true); };
     const handleEditarProducto = (producto: Producto) => { setProductoSeleccionado(producto); setShowModal(true); };
     
-    const handleEliminarProductoClick = (id: number) => {
+    const handleEliminarProductoClick = (id: string | number) => {
         setIdProductoAEliminar(id);
         setShowConfirmModal(true);
     };

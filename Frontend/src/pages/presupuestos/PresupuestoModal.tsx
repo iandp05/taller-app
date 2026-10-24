@@ -22,8 +22,8 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     // Estados base
-    const [vehiculoId, setVehiculoId] = useState<number>(0);
-    const [mecanicoId, setMecanicoId] = useState<number>(0);
+    const [vehiculoId, setVehiculoId] = useState<string | number>('');
+    const [mecanicoId, setMecanicoId] = useState<string | number>('');
     const [estado, setEstado] = useState('Emitido');
     const [validezDias, setValidezDias] = useState('15 días');
     const [condicionesPago, setCondicionesPago] = useState('Efectivo / Transferencia');
@@ -32,7 +32,7 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
     const [detalles, setDetalles] = useState<DetallePresupuestoCreate[]>([]);
     
     // Estados para ZONA 1: Repuestos
-    const [prodId, setProdId] = useState<number | ''>('');
+    const [prodId, setProdId] = useState<string | number | ''>('');
     const [prodCant, setProdCant] = useState<number>(1);
     const [prodPrecio, setProdPrecio] = useState<number | string>('');
 
@@ -63,14 +63,14 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
     useEffect(() => {
         if (presupuestoEditando) {
             setVehiculoId(presupuestoEditando.vehiculo_id);
-            setMecanicoId(presupuestoEditando.mecanico_id || 0);
+            setMecanicoId(presupuestoEditando.mecanico_id || '');
             setEstado(presupuestoEditando.estado);
             setValidezDias(presupuestoEditando.validez_dias);
             setCondicionesPago(presupuestoEditando.condiciones_pago);
             setDetalles(reordenarDetalles(presupuestoEditando.detalles || []));
         } else {
-            setVehiculoId(0);
-            setMecanicoId(0);
+            setVehiculoId('');
+            setMecanicoId('');
             setEstado('Emitido');
             setValidezDias('15 días');
             setCondicionesPago('Efectivo / Transferencia');
@@ -206,9 +206,9 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
         setCargando(true); 
 
         const presupuestoData: PresupuestoCreate = {
-            vehiculo_id: Number(vehiculoId),
+            vehiculo_id: vehiculoId,
             cliente_id: vehiculoObj.cliente_id, 
-            mecanico_id: mecanicoId > 0 ? Number(mecanicoId) : undefined,
+            mecanico_id: mecanicoId && mecanicoId !== '0' && mecanicoId !== 0 ? mecanicoId : undefined,
             estado,
             validez_dias: validezDias,
             condiciones_pago: condicionesPago,

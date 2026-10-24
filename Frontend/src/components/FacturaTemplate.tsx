@@ -152,7 +152,7 @@ export default function FacturaTemplate({ factura, vehiculo, cliente, empresaCon
                     {/* ENCABEZADO TALLER Y FACTURA */}
                     <View style={styles.headerContainer}>
                         <View style={styles.headerLeft}>
-                            <Text style={styles.companyTitle}>{config.nombreComercial.toUpperCase()}</Text>
+                            <Text style={styles.companyTitle}>{(config.nombreComercial || '').toUpperCase()}</Text>
                             <Text style={styles.textBold}>Razón Social: {config.razonSocial}</Text>
                             <Text style={styles.textNormal}>Domicilio Comercial: {config.domicilioCompleto}</Text>
                             <Text style={[styles.textBold, { marginTop: 4 }]}>Condición frente al IVA: {config.condicionIva}</Text>

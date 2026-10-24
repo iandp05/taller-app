@@ -22,7 +22,7 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
     const [empleados, setEmpleados] = useState<Usuario[]>([]);
     const [cargando, setCargando] = useState(false);
 
-    const [mecanicoId, setMecanicoId] = useState<number>(0);
+    const [mecanicoId, setMecanicoId] = useState<string | number>('');
 
     const [tipoComprobante, setTipoComprobante] = useState('Factura A');
     const [puntoVenta] = useState('00001'); 
@@ -33,10 +33,10 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
     const [cae, setCae] = useState('');
     const [caeVencimiento, setCaeVencimiento] = useState('');
 
-    const [clienteId, setClienteId] = useState<number>(0);
+    const [clienteId, setClienteId] = useState<string | number>('');
     const [clienteSearch, setClienteSearch] = useState('');
     
-    const [vehiculoId, setVehiculoId] = useState<number>(0);
+    const [vehiculoId, setVehiculoId] = useState<string | number>('');
     const [vehiculoSearch, setVehiculoSearch] = useState('');
 
     const [detalles, setDetalles] = useState<DetalleFacturaCreate[]>([]);
@@ -97,7 +97,9 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
         }
     }, [tipoComprobante, facturasExistentes, show]);
 
-    const vehiculosDisponibles = clienteId > 0 
+    const clienteIdValido = Boolean(clienteId) && clienteId !== '0' && clienteId !== 0;
+
+    const vehiculosDisponibles = clienteIdValido
         ? vehiculos.filter(v => v.cliente_id === clienteId) 
         : vehiculos;
 
@@ -113,11 +115,11 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
                 setVehiculoId(vehsDelCliente[0].id);
                 setVehiculoSearch(`${vehsDelCliente[0].patente} - ${vehsDelCliente[0].marca} ${vehsDelCliente[0].modelo}`);
             } else {
-                setVehiculoId(0);
+                setVehiculoId('');
                 setVehiculoSearch(''); 
             }
         } else {
-            setClienteId(0);
+            setClienteId('');
         }
     };
 
@@ -255,14 +257,11 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
         setCargando(true);
 
         const facturaData: FacturaCreate = {
-            vehiculo_id: Number(vehiculoId),
-            cliente_id: Number(clienteId),
-            mecanico_id: mecanicoId > 0 ? Number(mecanicoId) : undefined,
+            vehiculo_id: vehiculoId,
+            cliente_id: clienteId,
+            mecanico_id: Boolean(mecanicoId) && mecanicoId !== '0' ? mecanicoId : undefined,
             tipo_comprobante: tipoComprobante,
             punto_venta: puntoVenta,
-            numero_comprobante: Number(numeroComprobante),
-            cae: tipoComprobante === 'Remito' || !mostrarCAE ? undefined : (cae || undefined),
-            cae_vencimiento: tipoComprobante === 'Remito' || !mostrarCAE ? undefined : (caeVencimiento || undefined),
             condicion_venta: condicionVenta,
             detalles: detalles
         };
@@ -369,7 +368,7 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
                         <Col md={6}>
                             <Form.Group>
                                 <Form.Label className="fw-bold">Vehículo Asociado *</Form.Label>
-                                {clienteId > 0 && vehiculosDisponibles.length > 1 ? (
+                                {clienteIdValido && vehiculosDisponibles.length > 1 ? (
                                     <Form.Select 
                                         value={vehiculoSearch} 
                                         onChange={(e) => handleVehiculoSearch(e.target.value)} 
@@ -391,8 +390,8 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
                                             value={vehiculoSearch} 
                                             onChange={(e) => handleVehiculoSearch(e.target.value)} 
                                             required 
-                                            readOnly={clienteId > 0 && vehiculosDisponibles.length === 1}
-                                            className={clienteId > 0 && vehiculosDisponibles.length === 1 ? "bg-white fw-bold" : ""}
+                                            readOnly={clienteIdValido && vehiculosDisponibles.length === 1}
+                                            className={clienteIdValido && vehiculosDisponibles.length === 1 ? "bg-white fw-bold" : ""}
                                         />
                                         <datalist id="vehiculos-list">
                                             {vehiculosDisponibles.map(v => <option key={v.id} value={`${v.patente} - ${v.marca} ${v.modelo}`} />)}

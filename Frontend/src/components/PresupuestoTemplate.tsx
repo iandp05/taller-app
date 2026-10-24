@@ -171,8 +171,8 @@ export default function PresupuestoTemplate({ presupuesto, vehiculo, cliente, em
                     <View style={styles.headerRow} fixed>
                         <View style={styles.logoSection}>
                             <Image src={config.logo} style={styles.logo} />
-                            <Text style={styles.companyName}>{config.nombreComercial.toUpperCase()}</Text>
-                            <Text style={styles.companyInfo}>Cel: {config.telefono} - {config.domicilio.toUpperCase()}</Text>
+                            <Text style={styles.companyName}>{(config.nombreComercial || '').toUpperCase()}</Text>
+                            <Text style={styles.companyInfo}>Cel: {config.telefono} - {(config.domicilio || '').toUpperCase()}</Text>
                             <Text style={styles.companyInfo}>{config.condicionIvaPresupuesto}</Text>
                         </View>
                         <View style={styles.titleSection}>

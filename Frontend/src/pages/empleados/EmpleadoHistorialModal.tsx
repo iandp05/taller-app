@@ -16,7 +16,7 @@ interface EmpleadoHistorialModalProps {
 
 export interface DocumentoHistorial {
     idKey: string;
-    id: number;
+    id: string | number;
     tipo: 'Orden de Trabajo' | 'Presupuesto' | 'Factura';
     referencia: string;
     fecha: Date;
@@ -60,8 +60,8 @@ export default function EmpleadoHistorialModal({ show, handleClose, empleado }: 
                 getClientes()
             ]);
 
-            const getVehiculoObj = (vehiculoId: number) => vehiculosData.find(v => v.id === vehiculoId);
-            const getClienteObj = (clienteId?: number, vehiculoId?: number) => {
+            const getVehiculoObj = (vehiculoId: string | number) => vehiculosData.find(v => v.id === vehiculoId);
+            const getClienteObj = (clienteId?: string | number, vehiculoId?: string | number) => {
                 if (clienteId) return clientesData.find(c => c.id === clienteId);
                 if (vehiculoId) {
                     const v = getVehiculoObj(vehiculoId);

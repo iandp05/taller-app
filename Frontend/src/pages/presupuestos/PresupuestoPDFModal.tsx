@@ -11,7 +11,7 @@ import { Presupuesto, Vehiculo, Cliente, ConfiguracionTaller } from '../../types
 interface PresupuestoPDFModalProps {
     show: boolean;
     handleClose: () => void;
-    presupuestoId: number | null;
+    presupuestoId: string | number | null;
 }
 
 export default function PresupuestoPDFModal({ show, handleClose, presupuestoId }: PresupuestoPDFModalProps) {

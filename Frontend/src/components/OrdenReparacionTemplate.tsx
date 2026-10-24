@@ -249,7 +249,7 @@ export default function OrdenReparacionTemplate({ planilla, vehiculo, cliente, e
                             <Image src={config.logo} style={styles.logo} />
                         </View>
                         <View style={styles.companySection}>
-                            <Text style={styles.companyName}>{config.nombreComercial.toUpperCase()}</Text>
+                            <Text style={styles.companyName}>{(config.nombreComercial || '').toUpperCase()}</Text>
                             <Text style={styles.companySubtitle}>{config.subtitulo}</Text>
                             <Text style={styles.companySubtitle}>Cel: {config.telefono}</Text>
                             <Text style={styles.companySubtitle}>{config.domicilio}</Text>
@@ -301,10 +301,10 @@ export default function OrdenReparacionTemplate({ planilla, vehiculo, cliente, e
                     {/* CHECKLIST */}
                     <View style={styles.checklistRow} fixed>
                         <View style={styles.checkItem}>
-                            <CheckBox label="Frente de Stereo" checked={planilla.frente_stereo || false} />
+                            <CheckBox label="Frente de Stereo" checked={Boolean(planilla.frente_stereo) && String(planilla.frente_stereo).toLowerCase() !== 'no'} />
                         </View>
                         <View style={styles.checkItem}>
-                            <CheckBox label="Rueda de auxilio" checked={planilla.rueda_auxilio || false} />
+                            <CheckBox label="Rueda de auxilio" checked={Boolean(planilla.rueda_auxilio) && String(planilla.rueda_auxilio).toLowerCase() !== 'no'} />
                         </View>
                         <View style={styles.checkItem}>
                             <Text>Código de Stereo N°: <Text style={styles.bold}>{planilla.codigo_stereo || '..........'}</Text></Text>

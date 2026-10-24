@@ -17,7 +17,7 @@ export default function EmpleadosPage() {
 
     // Estados para controlar el modal flotante de confirmación
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [idEmpleadoAEliminar, setIdEmpleadoAEliminar] = useState<number | null>(null);
+    const [idEmpleadoAEliminar, setIdEmpleadoAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const [busqueda, setBusqueda] = useState('');
@@ -60,7 +60,7 @@ export default function EmpleadosPage() {
         setShowHistorialModal(true);
     };
 
-    const handleEliminarEmpleadoClick = (id: number) => {
+    const handleEliminarEmpleadoClick = (id: string | number) => {
         setIdEmpleadoAEliminar(id);
         setShowConfirmModal(true);
     };

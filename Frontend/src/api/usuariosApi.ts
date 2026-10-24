@@ -11,11 +11,11 @@ export const createUsuario = async (usuario: UsuarioCreate): Promise<Usuario> =>
     return response.data;
 };
 
-export const updateUsuario = async (id: number, usuario: Partial<UsuarioCreate>): Promise<Usuario> => {
+export const updateUsuario = async (id: string | number, usuario: Partial<UsuarioCreate>): Promise<Usuario> => {
     const response = await api.put(`/usuarios/${id}`, usuario);
     return response.data;
 };
 
-export const deleteUsuario = async (id: number): Promise<void> => {
+export const deleteUsuario = async (id: string | number): Promise<void> => {
     await api.delete(`/usuarios/${id}`);
 };

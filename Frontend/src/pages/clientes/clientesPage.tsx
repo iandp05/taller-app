@@ -13,7 +13,7 @@ export default function ClientesPage() {
 
     // Estados para controlar el modal flotante de confirmación
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [idClienteAEliminar, setIdClienteAEliminar] = useState<number | null>(null);
+    const [idClienteAEliminar, setIdClienteAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     // Estados de Búsqueda y Paginación
@@ -55,7 +55,7 @@ export default function ClientesPage() {
     const handleEditarCliente = (cliente: Cliente) => { setClienteSeleccionado(cliente); setShowModal(true); };
     
     // Abre el modal corporativo en lugar del aviso nativo
-    const handleEliminarClienteClick = (id: number) => {
+    const handleEliminarClienteClick = (id: string | number) => {
         setIdClienteAEliminar(id);
         setShowConfirmModal(true);
     };

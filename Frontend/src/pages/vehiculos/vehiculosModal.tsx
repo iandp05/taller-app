@@ -14,7 +14,7 @@ interface VehiculosModalProps {
 }
 
 interface VehiculoFormInputs {
-    cliente_id: number;
+    cliente_id: string | number;
     patente: string;
     marca: string;
     modelo: string;
@@ -39,7 +39,7 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
         formState: { errors }
     } = useForm<VehiculoFormInputs>({
         defaultValues: {
-            cliente_id: 0,
+            cliente_id: '',
             patente: '',
             marca: '',
             modelo: '',
@@ -75,7 +75,7 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
             });
         } else {
             reset({
-                cliente_id: 0,
+                cliente_id: '',
                 patente: '',
                 marca: '',
                 modelo: '',
@@ -97,7 +97,7 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
             modelo: data.modelo.trim(),
             anio: Number(data.anio),
             vin: data.vin?.trim().toUpperCase() || undefined,
-            cliente_id: Number(data.cliente_id)
+            cliente_id: data.cliente_id
         };
 
         try {
@@ -141,13 +141,13 @@ export default function VehiculoModal({ show, handleClose, onVehiculoSaved, vehi
                         <Form.Select 
                             isInvalid={!!errors.cliente_id}
                             {...register('cliente_id', {
-                                validate: value => Number(value) > 0 || "Por favor selecciona a qué cliente pertenece este vehículo."
+                                validate: value => (Boolean(value) && String(value) !== '0' && String(value).trim() !== '') || "Por favor selecciona a qué cliente pertenece este vehículo."
                             })}
                         >
-                            <option value={0}>Selecciona un cliente...</option>
+                            <option value="">Selecciona un cliente...</option>
                             {clientes.map(c => (
                                 <option key={c.id} value={c.id}>
-                                    {c.nombre} (ID: {c.id})
+                                    {c.nombre}
                                 </option>
                             ))}
                         </Form.Select>

@@ -120,7 +120,7 @@ export default function ConfiguracionPage() {
                 condicion_iva: data?.condicion_iva || DEFAULT_EMPRESA_CONFIG.condicion_iva,
                 condicion_iva_presupuesto: data?.condicion_iva_presupuesto || DEFAULT_EMPRESA_CONFIG.condicion_iva_presupuesto,
                 inicio_actividades: data?.inicio_actividades || DEFAULT_EMPRESA_CONFIG.inicio_actividades,
-                logo_base64: data?.logo_base64 || null
+                logo_base64: data?.logo_base64 || undefined
             });
         } catch (err: any) {
             console.error("Error al cargar la configuración", err);

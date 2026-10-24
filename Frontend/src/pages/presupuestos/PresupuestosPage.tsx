@@ -17,10 +17,10 @@ export default function PresupuestosPage() {
     const [presupuestoSeleccionado, setPresupuestoSeleccionado] = useState<Presupuesto | null>(null);
 
     const [showPDFModal, setShowPDFModal] = useState(false);
-    const [pdfPresupuestoId, setPdfPresupuestoId] = useState<number | null>(null);
+    const [pdfPresupuestoId, setPdfPresupuestoId] = useState<string | number | null>(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [presupuestoIdAEliminar, setPresupuestoIdAEliminar] = useState<number | null>(null);
+    const [presupuestoIdAEliminar, setPresupuestoIdAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     // Estado único para la búsqueda global
@@ -36,7 +36,7 @@ export default function PresupuestosPage() {
                 getVehiculos(),
                 getClientes()
             ]);
-            setPresupuestos(presupuestosData.sort((a, b) => b.id - a.id));
+            setPresupuestos([...presupuestosData].reverse());
             setVehiculos(vehiculosData);
             setClientes(clientesData);
         } catch (error) {
@@ -53,7 +53,7 @@ export default function PresupuestosPage() {
         setPaginaActual(1);
     }, [busqueda]);
 
-    const getVehiculo = (id: number) => vehiculos.find(v => v.id === id);
+    const getVehiculo = (id: string | number) => vehiculos.find(v => v.id === id);
     const getCliente = (presupuesto: Presupuesto) => {
         if (presupuesto.cliente) return presupuesto.cliente;
         if (presupuesto.cliente_id) return clientes.find(c => c.id === presupuesto.cliente_id);
@@ -84,12 +84,12 @@ export default function PresupuestosPage() {
     const handleNuevo = () => { setPresupuestoSeleccionado(null); setShowModal(true); };
     const handleEditar = (presupuesto: Presupuesto) => { setPresupuestoSeleccionado(presupuesto); setShowModal(true); };
     
-    const handleVerPDF = (id: number) => {
+    const handleVerPDF = (id: string | number) => {
         setPdfPresupuestoId(id);
         setShowPDFModal(true);
     };
 
-    const handleEliminarClick = (id: number) => {
+    const handleEliminarClick = (id: string | number) => {
         setPresupuestoIdAEliminar(id);
         setShowConfirmModal(true);
     };

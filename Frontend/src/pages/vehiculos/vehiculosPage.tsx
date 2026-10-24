@@ -12,7 +12,7 @@ export default function VehiculosPage() {
     const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<Vehiculo | null>(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [idVehiculoAEliminar, setIdVehiculoAEliminar] = useState<number | null>(null);
+    const [idVehiculoAEliminar, setIdVehiculoAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const [busqueda, setBusqueda] = useState('');
@@ -54,7 +54,7 @@ export default function VehiculosPage() {
     const handleNuevoVehiculo = () => { setVehiculoSeleccionado(null); setShowModal(true); };
     const handleEditarVehiculo = (vehiculo: Vehiculo) => { setVehiculoSeleccionado(vehiculo); setShowModal(true); };
     
-    const handleEliminarVehiculoClick = (id: number) => {
+    const handleEliminarVehiculoClick = (id: string | number) => {
         setIdVehiculoAEliminar(id);
         setShowConfirmModal(true);
     };

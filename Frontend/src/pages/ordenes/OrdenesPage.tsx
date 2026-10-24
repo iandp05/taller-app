@@ -18,11 +18,11 @@ export default function OrdenesPage() {
     const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenTrabajo | null>(null);
 
     const [showPdfModal, setShowPdfModal] = useState(false);
-    const [pdfOrdenId, setPdfOrdenId] = useState<number | null>(null);
+    const [pdfOrdenId, setPdfOrdenId] = useState<string | number | null>(null);
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showStockModal, setShowStockModal] = useState(false);
-    const [ordenIdAEliminar, setOrdenIdAEliminar] = useState<number | null>(null);
+    const [ordenIdAEliminar, setOrdenIdAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const [busqueda, setBusqueda] = useState('');
@@ -53,7 +53,7 @@ export default function OrdenesPage() {
         setPaginaActual(1);
     }, [busqueda, mostrarEntregados]);
 
-    const getVehiculo = (id: number) => vehiculos.find(v => v.id === id);
+    const getVehiculo = (id: string | number) => vehiculos.find(v => v.id === id);
     const getCliente = (orden: OrdenTrabajo) => {
         if (orden.cliente) return orden.cliente;
         if (orden.cliente_id) return clientes.find(c => c.id === orden.cliente_id);
@@ -88,12 +88,12 @@ export default function OrdenesPage() {
     const handleNuevaOrden = () => { setOrdenSeleccionada(null); setShowModal(true); };
     const handleEditarOrden = (orden: OrdenTrabajo) => { setOrdenSeleccionada(orden); setShowModal(true); };
     
-    const handleVerPdf = (id: number) => {
+    const handleVerPdf = (id: string | number) => {
         setPdfOrdenId(id);
         setShowPdfModal(true);
     };
 
-    const handleEliminarOrdenClick = (id: number) => {
+    const handleEliminarOrdenClick = (id: string | number) => {
         setOrdenIdAEliminar(id);
         setShowConfirmModal(true);
     };

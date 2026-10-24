@@ -24,7 +24,7 @@ export default function FacturasPage() {
 
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showStockModal, setShowStockModal] = useState(false);
-    const [facturaIdAEliminar, setFacturaIdAEliminar] = useState<number | null>(null);
+    const [facturaIdAEliminar, setFacturaIdAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
     const [busqueda, setBusqueda] = useState('');
@@ -39,7 +39,7 @@ export default function FacturasPage() {
                 getClientes(),
                 getConfiguracion().catch(() => null)
             ]);
-            setFacturas(facturasData.sort((a, b) => b.id - a.id));
+            setFacturas([...facturasData].reverse());
             setVehiculos(vehiculosData);
             setClientes(clientesData);
             setConfigTaller(configData);
@@ -56,8 +56,8 @@ export default function FacturasPage() {
         setPaginaActual(1);
     }, [busqueda]);
 
-    const getVehiculo = (id: number) => vehiculos.find(v => v.id === id);
-    const getCliente = (id: number) => clientes.find(c => c.id === id);
+    const getVehiculo = (id: string | number) => vehiculos.find(v => v.id === id);
+    const getCliente = (id: string | number) => clientes.find(c => c.id === id);
 
     const facturasFiltradas = facturas.filter(f => {
         const termino = busqueda.toLowerCase();
@@ -83,7 +83,7 @@ export default function FacturasPage() {
         setShowPdfModal(true);
     };
 
-    const handleEliminarClick = (id: number) => {
+    const handleEliminarClick = (id: string | number) => {
         setFacturaIdAEliminar(id);
         setShowConfirmModal(true);
     };
