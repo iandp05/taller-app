@@ -41,6 +41,19 @@ engine = engine_local
 SesionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_local)
 Base = declarative_base()
 
+# Precargar todos los modelos ORM para que SQLAlchemy resuelva relaciones cruzadas
+try:
+    import modulos.usuarios.models
+    import modulos.clientes.models
+    import modulos.vehiculos.models
+    import modulos.inventario.models
+    import modulos.ordenes.models
+    import modulos.presupuestos.models
+    import modulos.factura.models
+    import modulos.configuracion.models
+except Exception as e_models:
+    print("Aviso al precargar modelos SQLAlchemy:", e_models)
+
 # Singleton Engine y SessionFactory para Turso Cloud DB
 _TURSO_ENGINE_SINGLETON = None
 _TURSO_SESSION_FACTORY = None
