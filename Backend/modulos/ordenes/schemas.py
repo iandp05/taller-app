@@ -1,5 +1,5 @@
 # backend/modulos/ordenes/schemas.py
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 from modulos.vehiculos.schemas import VehiculoResponse
@@ -17,8 +17,7 @@ class DetalleOrdenResponse(BaseModel):
     cantidad: int
     precio_unitario: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class OrdenBase(BaseModel):
     vehiculo_id: str = Field(..., description="ID UUID del vehículo a reparar")
@@ -87,5 +86,4 @@ class OrdenResponse(OrdenBase):
     def convertir_id_str_response(cls, v):
         return str(v) if v is not None else None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

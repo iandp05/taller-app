@@ -1,5 +1,5 @@
 # backend/modulos/usuarios/schemas.py
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional
 
 class UsuarioBase(BaseModel):
@@ -53,8 +53,7 @@ class UsuarioResponse(UsuarioBase):
     def convertir_id_usuario_str(cls, v):
         return str(v) if v is not None else ""
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UsuarioLogin(BaseModel):
     username: str = Field(..., min_length=1, max_length=50)

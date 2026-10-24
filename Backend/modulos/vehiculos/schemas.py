@@ -1,5 +1,5 @@
 # backend/modulos/vehiculos/schemas.py
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional
 
 class VehiculoBase(BaseModel):
@@ -47,5 +47,4 @@ class VehiculoResponse(VehiculoBase):
     def convertir_id_vehiculo_str(cls, v):
         return str(v) if v is not None else None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

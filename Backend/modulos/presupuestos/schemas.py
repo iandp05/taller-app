@@ -1,5 +1,5 @@
 # backend/modulos/presupuestos/schemas.py
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import List, Optional
 from datetime import datetime
 from modulos.vehiculos.schemas import VehiculoResponse
@@ -25,8 +25,7 @@ class DetallePresupuestoResponse(BaseModel):
     def convertir_ids_detalle_presupuesto_str(cls, v):
         return str(v) if v is not None else None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PresupuestoBase(BaseModel):
     vehiculo_id: str = Field(..., description="ID UUID del vehículo")
@@ -62,5 +61,4 @@ class PresupuestoResponse(PresupuestoBase):
     def convertir_ids_presupuesto_str(cls, v):
         return str(v) if v is not None else None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

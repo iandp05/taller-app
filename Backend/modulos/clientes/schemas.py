@@ -1,6 +1,6 @@
 # backend/modulos/clientes/schemas.py
 import re
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List
 from modulos.vehiculos.schemas import VehiculoResponse
 
@@ -93,11 +93,9 @@ class ClienteResponse(ClienteBase):
     def convertir_id_cliente_str(cls, v):
         return str(v) if v is not None else ""
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ClienteDetalleResponse(ClienteResponse):
     vehiculos: List[VehiculoResponse] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

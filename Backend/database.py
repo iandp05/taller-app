@@ -34,7 +34,7 @@ cargar_env_multi_ruta()
 LOCAL_DATABASE_URL = f"sqlite:///{APP_PATHS['db_path']}"
 
 engine_local = create_engine(
-    LOCAL_DATABASE_URL, connect_args={"check_same_thread": False}
+    LOCAL_DATABASE_URL, connect_args={"check_same_thread": False, "timeout": 30.0}
 )
 engine = engine_local
 
@@ -151,17 +151,13 @@ def ejecutar_migraciones_turso(turso_engine):
         return
     try:
         with turso_engine.connect() as conn:
-            try:
-                conn.execute(text("ALTER TABLE configuracion_taller ADD COLUMN updated_at DATETIME;"))
-                conn.commit()
-            except Exception:
-                pass
-
-            try:
-                conn.execute(text("ALTER TABLE usuarios ADD COLUMN updated_at DATETIME;"))
-                conn.commit()
-            except Exception:
-                pass
+            tablas = ["configuracion_taller", "usuarios", "clientes", "vehiculos", "inventario", "ordenes_trabajo", "detalle_ordenes", "presupuestos", "detalle_presupuestos", "facturas", "detalle_facturas"]
+            for tabla in tablas:
+                try:
+                    conn.execute(text(f"ALTER TABLE {tabla} ADD COLUMN updated_at DATETIME;"))
+                    conn.commit()
+                except Exception:
+                    pass
 
             try:
                 conn.execute(text("ALTER TABLE usuarios ADD COLUMN preferencia_tema VARCHAR(20) DEFAULT 'light';"))
