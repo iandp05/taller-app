@@ -110,9 +110,10 @@ export default function OrdenesPage() {
             setShowStockModal(false);
             setOrdenIdAEliminar(null);
             cargarDatos();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error al eliminar:", error);
-            setErrorMsg("No se pudo eliminar la orden de trabajo.");
+            setErrorMsg(error.response?.data?.detail || "No se pudo eliminar la orden de trabajo.");
+            setShowStockModal(false);
         }
     };
 

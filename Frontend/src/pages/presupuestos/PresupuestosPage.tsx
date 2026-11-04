@@ -101,9 +101,10 @@ export default function PresupuestosPage() {
             setShowConfirmModal(false);
             setPresupuestoIdAEliminar(null);
             cargarDatos();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error al eliminar:", error);
-            setErrorMsg("No se pudo eliminar el presupuesto.");
+            setErrorMsg(error.response?.data?.detail || "No se pudo eliminar el presupuesto.");
+            setShowConfirmModal(false);
         }
     };
 

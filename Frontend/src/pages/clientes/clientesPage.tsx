@@ -69,9 +69,10 @@ export default function ClientesPage() {
             setShowConfirmModal(false);
             setIdClienteAEliminar(null);
             cargarClientes();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error al eliminar:", error);
-            setErrorMsg("No se pudo eliminar el cliente.");
+            setErrorMsg(error.response?.data?.detail || "No se pudo eliminar el cliente.");
+            setShowConfirmModal(false);
         }
     };
 

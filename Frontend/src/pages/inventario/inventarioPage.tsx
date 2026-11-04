@@ -175,9 +175,10 @@ export default function InventarioPage() {
             setShowConfirmModal(false);
             setIdProductoAEliminar(null);
             cargarInventario();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error al eliminar:", error);
-            setErrorMsg("No se pudo eliminar el producto.");
+            setErrorMsg(error.response?.data?.detail || "No se pudo eliminar el producto.");
+            setShowConfirmModal(false);
         }
     };
 

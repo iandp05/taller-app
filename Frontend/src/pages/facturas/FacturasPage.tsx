@@ -100,9 +100,10 @@ export default function FacturasPage() {
             setShowStockModal(false);
             setFacturaIdAEliminar(null);
             cargarDatos();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error al eliminar factura:", error);
-            setErrorMsg("No se pudo eliminar el comprobante.");
+            setErrorMsg(error.response?.data?.detail || "No se pudo eliminar el comprobante.");
+            setShowStockModal(false);
         }
     };
 
