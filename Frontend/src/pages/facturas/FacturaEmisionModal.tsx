@@ -40,7 +40,7 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
     const [vehiculoSearch, setVehiculoSearch] = useState('');
 
     const [detalles, setDetalles] = useState<DetalleFacturaCreate[]>([]);
-    const [prodId, setProdId] = useState<number | ''>('');
+    const [prodId, setProdId] = useState<string | number | ''>('');
     const [prodCant, setProdCant] = useState<number>(1);
     const [prodPrecio, setProdPrecio] = useState<number | string>('');
     
@@ -140,10 +140,10 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
     };
 
     const handleProductoSelect = (id: string) => {
-        const pId = id ? Number(id) : '';
+        const pId = id || '';
         setProdId(pId);
         if (pId) {
-            const prod = productos.find(p => p.id === pId);
+            const prod = productos.find(p => String(p.id) === String(pId));
             if (prod) setProdPrecio(prod.precio);
         } else {
             setProdPrecio('');
@@ -168,11 +168,11 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
             return;
         }
 
-        const prod = productos.find(p => p.id === prodId);
+        const prod = productos.find(p => String(p.id) === String(prodId));
         if (!prod) return;
 
         const nuevos = [...detalles];
-        const idx = nuevos.findIndex(d => d.producto_id === prod.id);
+        const idx = nuevos.findIndex(d => String(d.producto_id) === String(prod.id));
         const cantTotal = (idx >= 0 ? nuevos[idx].cantidad : 0) + cant;
 
         if (prod.cantidad < cantTotal) {

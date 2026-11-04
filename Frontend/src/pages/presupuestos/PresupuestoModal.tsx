@@ -87,10 +87,10 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
 
     const handleProductoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const id = e.target.value;
-        setProdId(id ? Number(id) : '');
+        setProdId(id || '');
         
         if (id) {
-            const producto = productos.find(p => p.id === Number(id));
+            const producto = productos.find(p => String(p.id) === String(id));
             if (producto) setProdPrecio(producto.precio);
         } else {
             setProdPrecio('');
@@ -115,11 +115,11 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
             return;
         }
         
-        const producto = productos.find(p => p.id === prodId);
+        const producto = productos.find(p => String(p.id) === String(prodId));
         if (!producto) return;
 
         const nuevosDetalles = [...detalles];
-        const indexExistente = nuevosDetalles.findIndex(d => d.producto_id === producto.id);
+        const indexExistente = nuevosDetalles.findIndex(d => String(d.producto_id) === String(producto.id));
 
         if (indexExistente >= 0) {
             nuevosDetalles[indexExistente].cantidad += cant;
