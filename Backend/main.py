@@ -152,6 +152,19 @@ def get_frontend_dist_dir():
     return None
 
 frontend_dist = get_frontend_dist_dir()
+
+@app.get("/version.json")
+def obtener_manifest_version():
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    version_file = os.path.join(root_dir, "version.json")
+    if os.path.exists(version_file):
+        return FileResponse(version_file, media_type="application/json")
+    return {
+        "version": "1.0.1",
+        "url": "https://github.com/iandp05/taller-app/releases/latest",
+        "notes": "Novedades v1.0.1: Solución a selección de repuestos, autocompletado de precios y blindaje de modales."
+    }
+
 if frontend_dist and os.path.exists(frontend_dist):
     assets_dir = os.path.join(frontend_dist, "assets")
     if os.path.exists(assets_dir):

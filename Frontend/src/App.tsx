@@ -5,8 +5,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // Importamos el Contexto de Autenticación
 import { AuthProvider, AuthContext } from './context/AuthContext';
 
-// Importamos la barra de navegación
+// Importamos la barra de navegación y el modal de actualización
 import Navbar from './components/Navbar';
+import UpdateModal from './components/UpdateModal';
 
 // Importamos todas tus páginas
 import LoginPage from './pages/auth/LoginPage';
@@ -37,9 +38,10 @@ function AppContent() {
 
     return (
         <>
-            {/* Solo mostramos la barra superior si el usuario está logueado */}
+            {/* Solo mostramos la barra superior y el modal de actualización si el usuario está logueado */}
             {user && <Navbar />}
-            
+            {user && <UpdateModal />}
+
             {/* Quitamos los márgenes si estamos en la pantalla de login */}
             <div className={user ? "app-main-container px-2 px-sm-3 px-md-4 my-2 my-md-4" : ""}>
                 <Routes>

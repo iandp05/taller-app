@@ -1,0 +1,5 @@
+{
+  "version": "1.0.1",
+  "url": "https://github.com/iandp05/taller-app/releases/latest",
+  "notes": "Novedades v1.0.1: Solución a selección de repuestos con autocompletado de precios, blindaje de modales y sincronización outbox mejorada."
+}
