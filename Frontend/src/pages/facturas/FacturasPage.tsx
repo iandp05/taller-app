@@ -56,8 +56,8 @@ export default function FacturasPage() {
         setPaginaActual(1);
     }, [busqueda]);
 
-    const getVehiculo = (id: string | number) => vehiculos.find(v => v.id === id);
-    const getCliente = (id: string | number) => clientes.find(c => c.id === id);
+    const getVehiculo = (id: string | number) => vehiculos.find(v => String(v.id) === String(id));
+    const getCliente = (id: string | number) => clientes.find(c => String(c.id) === String(id));
 
     const facturasFiltradas = facturas.filter(f => {
         const termino = busqueda.toLowerCase();
@@ -244,8 +244,8 @@ export default function FacturasPage() {
                         <PDFViewer width="100%" height="100%">
                             <FacturaTemplate 
                                 factura={facturaSeleccionadaPdf} 
-                                vehiculo={getVehiculo(facturaSeleccionadaPdf.vehiculo_id)!} 
-                                cliente={getCliente(facturaSeleccionadaPdf.cliente_id)!} 
+                                vehiculo={getVehiculo(facturaSeleccionadaPdf.vehiculo_id) || { id: '0', patente: 'S/P', marca: 'Vehículo', modelo: 'General' } as any}
+                                cliente={getCliente(facturaSeleccionadaPdf.cliente_id) || { id: '0', nombre: 'Consumidor Final', cuit: '' } as any}
                                 empresaConfig={configTaller}
                             />
                         </PDFViewer>
@@ -258,13 +258,13 @@ export default function FacturasPage() {
                             document={
                                 <FacturaTemplate 
                                     factura={facturaSeleccionadaPdf} 
-                                    vehiculo={getVehiculo(facturaSeleccionadaPdf.vehiculo_id)!} 
-                                    cliente={getCliente(facturaSeleccionadaPdf.cliente_id)!} 
+                                    vehiculo={getVehiculo(facturaSeleccionadaPdf.vehiculo_id) || { id: '0', patente: 'S/P', marca: 'Vehículo', modelo: 'General' } as any}
+                                    cliente={getCliente(facturaSeleccionadaPdf.cliente_id) || { id: '0', nombre: 'Consumidor Final', cuit: '' } as any}
                                     empresaConfig={configTaller}
                                 />
                             }
                             fileName={`${facturaSeleccionadaPdf.tipo_comprobante.replace(' ', '_')}_${facturaSeleccionadaPdf.punto_venta}-${facturaSeleccionadaPdf.numero_comprobante.toString().padStart(8, '0')}.pdf`}
-                            className="btn btn-primary"
+                            className="btn btn-primary fw-semibold px-4"
                         >
                             {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
                         </PDFDownloadLink>

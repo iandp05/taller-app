@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException 
 from . import models, schemas
 
-def get_vehiculo(db: Session, vehiculo_id: int):
+def get_vehiculo(db: Session, vehiculo_id: str):
     return db.query(models.Vehiculo).filter(models.Vehiculo.id == vehiculo_id).first()
 
 def get_vehiculos(db: Session, skip: int = 0, limit: int = 100):
@@ -20,7 +20,7 @@ def create_vehiculo(db: Session, vehiculo: schemas.VehiculoCreate):
     db.refresh(db_vehiculo)
     return db_vehiculo
 
-def update_vehiculo(db: Session, vehiculo_id: int, vehiculo_data: schemas.VehiculoUpdate):
+def update_vehiculo(db: Session, vehiculo_id: str, vehiculo_data: schemas.VehiculoUpdate):
     db_vehiculo = get_vehiculo(db, vehiculo_id)
     if db_vehiculo:
         update_data = vehiculo_data.model_dump(exclude_unset=True)
@@ -30,7 +30,7 @@ def update_vehiculo(db: Session, vehiculo_id: int, vehiculo_data: schemas.Vehicu
         db.refresh(db_vehiculo)
     return db_vehiculo
 
-def cambiar_dueno(db: Session, vehiculo_id: int, nuevo_cliente_id: int):
+def cambiar_dueno(db: Session, vehiculo_id: str, nuevo_cliente_id: str):
     db_vehiculo = get_vehiculo(db, vehiculo_id)
     if db_vehiculo:
         db_vehiculo.cliente_id = nuevo_cliente_id

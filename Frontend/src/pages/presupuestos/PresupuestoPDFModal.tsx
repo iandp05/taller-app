@@ -14,10 +14,28 @@ interface PresupuestoPDFModalProps {
     presupuestoId: string | number | null;
 }
 
+const VEHICULO_FALLBACK: Vehiculo = {
+    id: '0',
+    patente: 'S/P',
+    marca: 'Vehículo',
+    modelo: 'General',
+    anio: 2024,
+    cliente_id: '0'
+};
+
+const CLIENTE_FALLBACK: Cliente = {
+    id: '0',
+    nombre: 'Cliente General',
+    telefono: 'Sin Teléfono',
+    email: '',
+    cuit: '',
+    domicilio: 'Sin domicilio'
+};
+
 export default function PresupuestoPDFModal({ show, handleClose, presupuestoId }: PresupuestoPDFModalProps) {
     const [presupuestoCompleto, setPresupuestoCompleto] = useState<Presupuesto | null>(null);
-    const [vehiculo, setVehiculo] = useState<Vehiculo | null>(null);
-    const [cliente, setCliente] = useState<Cliente | null>(null);
+    const [vehiculo, setVehiculo] = useState<Vehiculo>(VEHICULO_FALLBACK);
+    const [cliente, setCliente] = useState<Cliente>(CLIENTE_FALLBACK);
     const [configTaller, setConfigTaller] = useState<ConfiguracionTaller | null>(null);
     const [cargandoPDF, setCargandoPDF] = useState(true);
 
@@ -36,14 +54,12 @@ export default function PresupuestoPDFModal({ show, handleClose, presupuestoId }
 
                 setConfigTaller(configData);
 
-                const vehiculoEncontrado = vehiculosData.find(v => v.id === presData.vehiculo_id) || null;
+                const vehiculoEncontrado = vehiculosData.find(v => String(v.id) === String(presData.vehiculo_id)) || VEHICULO_FALLBACK;
                 setVehiculo(vehiculoEncontrado);
 
-                if (vehiculoEncontrado) {
-                    const idDueño = presData.cliente_id ? presData.cliente_id : vehiculoEncontrado.cliente_id;
-                    const clienteEncontrado = clientesData.find(c => c.id === idDueño) || null;
-                    setCliente(clienteEncontrado);
-                }
+                const idDueño = presData.cliente_id ? presData.cliente_id : vehiculoEncontrado.cliente_id;
+                const clienteEncontrado = clientesData.find(c => String(c.id) === String(idDueño)) || CLIENTE_FALLBACK;
+                setCliente(clienteEncontrado);
 
                 setPresupuestoCompleto(presData);
             } catch (error) {
@@ -57,13 +73,12 @@ export default function PresupuestoPDFModal({ show, handleClose, presupuestoId }
             cargarDatosDocumento();
         } else {
             setPresupuestoCompleto(null);
-            setVehiculo(null);
-            setCliente(null);
+            setVehiculo(VEHICULO_FALLBACK);
+            setCliente(CLIENTE_FALLBACK);
         }
     }, [show, presupuestoId]);
 
-    // Función para formatear el ID con 8 ceros
-    const numeroPresupuestoStr = presupuestoId ? presupuestoId.toString().padStart(8, '0') : '';
+    const numeroPresupuestoStr = presupuestoId ? presupuestoId.toString().slice(0, 8) : '';
 
     return (
         <Modal show={show} onHide={handleClose} size="xl" centered>
@@ -71,7 +86,7 @@ export default function PresupuestoPDFModal({ show, handleClose, presupuestoId }
                 <Modal.Title>Cotización PDF</Modal.Title>
             </Modal.Header>
             <Modal.Body className="p-0" style={{ height: '70vh' }}>
-                {!cargandoPDF && presupuestoCompleto && cliente && vehiculo ? (
+                {!cargandoPDF && presupuestoCompleto ? (
                     <PDFViewer width="100%" height="100%">
                         <PresupuestoTemplate 
                             presupuesto={presupuestoCompleto} 
@@ -83,17 +98,17 @@ export default function PresupuestoPDFModal({ show, handleClose, presupuestoId }
                 ) : (
                     <div className="d-flex justify-content-center align-items-center h-100 flex-column">
                         <div className="spinner-border text-primary mb-3" role="status"></div>
-                        <p className="text-muted">Recolectando datos y generando documento...</p>
+                        <p className="text-muted">Generando documento en formato PDF...</p>
                     </div>
                 )}
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={handleClose}>Cerrar</Button>
-                {!cargandoPDF && presupuestoCompleto && vehiculo && cliente && (
+                {!cargandoPDF && presupuestoCompleto && (
                     <PDFDownloadLink
                         document={<PresupuestoTemplate presupuesto={presupuestoCompleto} vehiculo={vehiculo} cliente={cliente} empresaConfig={configTaller} />}
                         fileName={`Presupuesto_${numeroPresupuestoStr}.pdf`}
-                        className="btn btn-primary"
+                        className="btn btn-primary fw-semibold px-4"
                     >
                         {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
                     </PDFDownloadLink>

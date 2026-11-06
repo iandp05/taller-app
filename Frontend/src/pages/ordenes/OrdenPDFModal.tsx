@@ -15,10 +15,27 @@ interface OrdenPdfModalProps {
     ordenId: string | number | null;
 }
 
+const VEHICULO_FALLBACK = {
+    id: '0',
+    patente: 'S/P',
+    marca: 'Vehículo',
+    modelo: 'General',
+    cliente_id: '0'
+};
+
+const CLIENTE_FALLBACK = {
+    id: '0',
+    nombre: 'Cliente General',
+    telefono: 'Sin Teléfono',
+    email: '',
+    cuit: '',
+    domicilio: 'Sin domicilio'
+};
+
 export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfModalProps) {
     const [ordenCompleta, setOrdenCompleta] = useState<any>(null);
-    const [vehiculo, setVehiculo] = useState<any>(null);
-    const [cliente, setCliente] = useState<any>(null);
+    const [vehiculo, setVehiculo] = useState<any>(VEHICULO_FALLBACK);
+    const [cliente, setCliente] = useState<any>(CLIENTE_FALLBACK);
     const [configTaller, setConfigTaller] = useState<any>(null);
     const [cargandoPDF, setCargandoPDF] = useState(true);
 
@@ -38,14 +55,12 @@ export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfMo
 
                 setConfigTaller(configData);
 
-                const vehiculoEncontrado = vehiculosData.find(v => v.id === ordenData.vehiculo_id);
+                const vehiculoEncontrado = vehiculosData.find(v => String(v.id) === String(ordenData.vehiculo_id)) || VEHICULO_FALLBACK;
                 setVehiculo(vehiculoEncontrado);
 
-                if (vehiculoEncontrado) {
-                    const idDuenoOrden = ordenData.cliente_id ? ordenData.cliente_id : vehiculoEncontrado.cliente_id;
-                    const clienteEncontrado = clientesData.find(c => c.id === idDuenoOrden);
-                    setCliente(clienteEncontrado);
-                }
+                const idDuenoOrden = ordenData.cliente_id ? ordenData.cliente_id : vehiculoEncontrado.cliente_id;
+                const clienteEncontrado = clientesData.find(c => String(c.id) === String(idDuenoOrden)) || CLIENTE_FALLBACK;
+                setCliente(clienteEncontrado);
 
                 setOrdenCompleta(ordenData);
                 setCargandoPDF(false);
@@ -60,10 +75,12 @@ export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfMo
             cargarDatosOrden();
         } else {
             setOrdenCompleta(null);
-            setVehiculo(null);
-            setCliente(null);
+            setVehiculo(VEHICULO_FALLBACK);
+            setCliente(CLIENTE_FALLBACK);
         }
     }, [show, ordenId]);
+
+    const idFormateado = ordenId ? ordenId.toString().slice(0, 8) : '';
 
     return (
         <Modal show={show} onHide={handleClose} size="xl" centered>
@@ -71,7 +88,7 @@ export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfMo
                 <Modal.Title>Orden de Reparación PDF</Modal.Title>
             </Modal.Header>
             <Modal.Body className="p-0" style={{ height: '70vh' }}>
-                {!cargandoPDF && ordenCompleta && cliente && vehiculo ? (
+                {!cargandoPDF && ordenCompleta ? (
                     <PDFViewer width="100%" height="100%">
                         <OrdenReparacionTemplate 
                             planilla={ordenCompleta} 
@@ -83,7 +100,7 @@ export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfMo
                 ) : (
                     <div className="d-flex justify-content-center align-items-center h-100 flex-column">
                         <div className="spinner-border text-primary mb-3" role="status"></div>
-                        <p className="text-muted">Recolectando datos y generando documento...</p>
+                        <p className="text-muted">Generando documento en formato PDF...</p>
                     </div>
                 )}
             </Modal.Body>
@@ -92,8 +109,8 @@ export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfMo
                 {!cargandoPDF && ordenCompleta && (
                     <PDFDownloadLink
                         document={<OrdenReparacionTemplate planilla={ordenCompleta} vehiculo={vehiculo} cliente={cliente} empresaConfig={configTaller} />}
-                        fileName={`${formatEmpresaConfig(configTaller).pdfFileNamePrefix}_Orden_${ordenId}.pdf`}
-                        className="btn btn-primary"
+                        fileName={`${formatEmpresaConfig(configTaller).pdfFileNamePrefix}_Orden_${idFormateado}.pdf`}
+                        className="btn btn-primary fw-semibold px-4"
                     >
                         {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
                     </PDFDownloadLink>
