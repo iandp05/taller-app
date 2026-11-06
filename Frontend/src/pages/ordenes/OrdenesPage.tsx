@@ -1,6 +1,6 @@
 // Frontend/src/pages/ordenes/OrdenesPage.tsx
 import { useEffect, useState } from 'react';
-import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Badge, Modal, Alert } from 'react-bootstrap';
+import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Badge, Modal, Alert, ListGroup } from 'react-bootstrap';
 import { OrdenTrabajo, Vehiculo, Cliente } from '../../types';
 import { getOrdenes, deleteOrden } from '../../api/ordenesApi';
 import { getVehiculos } from '../../api/vehiculosApi';
@@ -24,6 +24,9 @@ export default function OrdenesPage() {
     const [showStockModal, setShowStockModal] = useState(false);
     const [ordenIdAEliminar, setOrdenIdAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    // Estado para ver el detalle en Bottom Sheet/Modal Móvil (Estilo App Bancaria)
+    const [ordenDetalleMobile, setOrdenDetalleMobile] = useState<OrdenTrabajo | null>(null);
 
     // Búsqueda y Paginación
     const [busqueda, setBusqueda] = useState('');
@@ -128,7 +131,6 @@ export default function OrdenesPage() {
         }
     };
 
-    // Formateador de ID limpio acortado
     const formatearIdOrden = (id: string | number) => {
         const idStr = id.toString();
         if (idStr.length > 10) {
@@ -162,7 +164,7 @@ export default function OrdenesPage() {
                                 />
                             </InputGroup>
                         </Col>
-                        <Col md={4} className="text-end">
+                        <Col md={4} className="text-end mt-2 mt-md-0">
                             <Form.Check
                                 type="switch"
                                 id="mostrar-entregados"
@@ -174,69 +176,116 @@ export default function OrdenesPage() {
                         </Col>
                     </Row>
 
-                    <Table striped hover responsive className="mb-0 align-middle">
-                        <thead className="table-dark">
-                            <tr>
-                                <th>Nº Orden</th>
-                                <th>Fecha Ingreso</th>
-                                <th>Cliente</th>
-                                <th>Vehículo</th>
-                                <th>Estado</th>
-                                <th>Total</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {ordenesPaginadas.length === 0 ? (
+                    {/* VISTA ESCRITORIO (>= 768px): Tabla Clásica Bootstrap */}
+                    <div className="d-none d-md-block">
+                        <Table striped hover responsive className="mb-0 align-middle">
+                            <thead className="table-dark">
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4 text-muted">
-                                        No se encontraron órdenes de trabajo que coincidan con la búsqueda.
-                                    </td>
+                                    <th>Nº Orden</th>
+                                    <th>Fecha Ingreso</th>
+                                    <th>Cliente</th>
+                                    <th>Vehículo</th>
+                                    <th>Estado</th>
+                                    <th>Total</th>
+                                    <th>Acciones</th>
                                 </tr>
-                            ) : (
-                                ordenesPaginadas.map((orden) => {
+                            </thead>
+                            <tbody>
+                                {ordenesPaginadas.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="text-center py-4 text-muted">
+                                            No se encontraron órdenes de trabajo que coincidan con la búsqueda.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    ordenesPaginadas.map((orden) => {
+                                        const vehiculo = getVehiculo(orden.vehiculo_id);
+                                        const cliente = getCliente(orden);
+                                        const esEliminable = orden.estado === 'Ingresado' || orden.estado === 'Pendiente';
+
+                                        return (
+                                            <tr key={orden.id}>
+                                                <td className="fw-bold">{formatearIdOrden(orden.id)}</td>
+                                                <td>{new Date(orden.fecha_ingreso).toLocaleDateString()}</td>
+
+                                                <td className="fw-semibold text-truncate" style={{ maxWidth: '160px' }}>
+                                                    <div>{cliente?.nombre || 'Sin Cliente'}</div>
+                                                    {cliente?.telefono && <small className="text-muted d-block">{cliente.telefono}</small>}
+                                                </td>
+
+                                                <td>
+                                                    {vehiculo ? (
+                                                        <div>
+                                                            <Badge bg="secondary" className="me-1">{vehiculo.patente}</Badge>
+                                                            <small className="text-muted d-block">{vehiculo.marca} {vehiculo.modelo}</small>
+                                                        </div>
+                                                    ) : 'Desconocido'}
+                                                </td>
+
+                                                <td>{getEstadoBadge(orden.estado)}</td>
+
+                                                <td className="fw-bold text-success">
+                                                    ${orden.total.toLocaleString()}
+                                                </td>
+
+                                                <td>
+                                                    <Button variant="outline-primary" size="sm" className="me-2 mb-1" onClick={() => handleEditarOrden(orden)}>Ver / Editar</Button>
+                                                    <Button variant="outline-danger" size="sm" className="me-2 mb-1" onClick={() => handleVerPdf(orden.id)}>PDF</Button>
+                                                    {esEliminable && (
+                                                        <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarClick(orden.id)}>Eliminar</Button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+
+                    {/* VISTA MÓVIL (< 768px): Lista Compacta 1 Línea Estilo App Bancaria */}
+                    <div className="d-md-none">
+                        {ordenesPaginadas.length === 0 ? (
+                            <div className="text-center py-4 text-muted">
+                                No se encontraron órdenes de trabajo.
+                            </div>
+                        ) : (
+                            <ListGroup variant="flush">
+                                {ordenesPaginadas.map((orden) => {
                                     const vehiculo = getVehiculo(orden.vehiculo_id);
                                     const cliente = getCliente(orden);
-                                    const esEliminable = orden.estado === 'Ingresado' || orden.estado === 'Pendiente';
 
                                     return (
-                                        <tr key={orden.id}>
-                                            <td className="fw-bold">{formatearIdOrden(orden.id)}</td>
-                                            <td>{new Date(orden.fecha_ingreso).toLocaleDateString()}</td>
+                                        <ListGroup.Item
+                                            key={orden.id}
+                                            action
+                                            onClick={() => setOrdenDetalleMobile(orden)}
+                                            className="d-flex align-items-center justify-content-between py-3 px-2 border-bottom cursor-pointer"
+                                        >
+                                            <div className="text-truncate me-2" style={{ maxWidth: '65%' }}>
+                                                <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.95rem' }}>
+                                                    {formatearIdOrden(orden.id)} • {cliente?.nombre || 'Sin Cliente'}
+                                                </div>
+                                                <div className="text-muted small text-truncate">
+                                                    {vehiculo ? `${vehiculo.patente} (${vehiculo.marca} ${vehiculo.modelo})` : orden.descripcion_falla}
+                                                </div>
+                                            </div>
 
-                                            <td className="fw-semibold text-truncate" style={{ maxWidth: '160px' }}>
-                                                <div>{cliente?.nombre || 'Sin Cliente'}</div>
-                                                {cliente?.telefono && <small className="text-muted d-block">{cliente.telefono}</small>}
-                                            </td>
-
-                                            <td>
-                                                {vehiculo ? (
-                                                    <div>
-                                                        <Badge bg="secondary" className="me-1">{vehiculo.patente}</Badge>
-                                                        <small className="text-muted d-block">{vehiculo.marca} {vehiculo.modelo}</small>
+                                            <div className="text-end flex-shrink-0 d-flex align-items-center gap-2">
+                                                <div>
+                                                    <div className="fw-bold text-success" style={{ fontSize: '0.92rem' }}>
+                                                        ${orden.total.toLocaleString()}
                                                     </div>
-                                                ) : 'Desconocido'}
-                                            </td>
-
-                                            <td>{getEstadoBadge(orden.estado)}</td>
-
-                                            <td className="fw-bold text-success">
-                                                ${orden.total.toLocaleString()}
-                                            </td>
-
-                                            <td>
-                                                <Button variant="outline-primary" size="sm" className="me-2 mb-1" onClick={() => handleEditarOrden(orden)}>Ver / Editar</Button>
-                                                <Button variant="outline-danger" size="sm" className="me-2 mb-1" onClick={() => handleVerPdf(orden.id)}>PDF</Button>
-                                                {esEliminable && (
-                                                    <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarClick(orden.id)}>Eliminar</Button>
-                                                )}
-                                            </td>
-                                        </tr>
+                                                    <div>{getEstadoBadge(orden.estado)}</div>
+                                                </div>
+                                                <span className="text-muted fw-bold fs-5">›</span>
+                                            </div>
+                                        </ListGroup.Item>
                                     );
-                                })
-                            )}
-                        </tbody>
-                    </Table>
+                                })}
+                            </ListGroup>
+                        )}
+                    </div>
 
                     {totalPaginas > 1 && (
                         <div className="d-flex justify-content-end mt-3">
@@ -253,6 +302,104 @@ export default function OrdenesPage() {
                     )}
                 </Card.Body>
             </Card>
+
+            {/* Bottom Sheet / Modal Móvil de Detalle con Botones Táctiles Grandes (Estilo Bancario) */}
+            <Modal
+                show={!!ordenDetalleMobile}
+                onHide={() => setOrdenDetalleMobile(null)}
+                centered
+                dialogClassName="modal-bottom-sheet"
+            >
+                {ordenDetalleMobile && (() => {
+                    const vehiculo = getVehiculo(ordenDetalleMobile.vehiculo_id);
+                    const cliente = getCliente(ordenDetalleMobile);
+                    const esEliminable = ordenDetalleMobile.estado === 'Ingresado' || ordenDetalleMobile.estado === 'Pendiente';
+
+                    return (
+                        <>
+                            <Modal.Header closeButton className="bg-dark text-white">
+                                <Modal.Title className="fs-5 fw-bold">
+                                    Detalle de Orden {formatearIdOrden(ordenDetalleMobile.id)}
+                                </Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body className="p-3">
+                                <div className="p-3 bg-light border rounded mb-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <span className="text-muted small">Estado Actual:</span>
+                                        <div>{getEstadoBadge(ordenDetalleMobile.estado)}</div>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <span className="text-muted small">Monto Total:</span>
+                                        <span className="fw-bold text-success fs-5">${ordenDetalleMobile.total.toLocaleString()}</span>
+                                    </div>
+                                </div>
+
+                                <div className="mb-2">
+                                    <small className="text-muted d-block">Cliente:</small>
+                                    <strong className="text-dark">{cliente?.nombre || 'Sin cliente'}</strong>
+                                    {cliente?.telefono && <span className="text-muted small ms-2">({cliente.telefono})</span>}
+                                </div>
+
+                                <div className="mb-2">
+                                    <small className="text-muted d-block">Vehículo:</small>
+                                    {vehiculo ? (
+                                        <strong className="text-dark">{vehiculo.patente} - {vehiculo.marca} {vehiculo.modelo}</strong>
+                                    ) : <span className="text-muted">Sin datos</span>}
+                                </div>
+
+                                <div className="mb-2">
+                                    <small className="text-muted d-block">Fecha de Ingreso:</small>
+                                    <span className="text-dark">{new Date(ordenDetalleMobile.fecha_ingreso).toLocaleDateString()}</span>
+                                </div>
+
+                                <div className="mb-2">
+                                    <small className="text-muted d-block">Descripción / Falla:</small>
+                                    <p className="text-secondary small bg-light p-2 border rounded mb-0">
+                                        {ordenDetalleMobile.descripcion_falla || 'Sin observaciones'}
+                                    </p>
+                                </div>
+                            </Modal.Body>
+                            <Modal.Footer className="d-flex flex-column gap-2">
+                                <Button
+                                    variant="primary"
+                                    className="w-100 py-2 fw-bold"
+                                    onClick={() => {
+                                        const ord = ordenDetalleMobile;
+                                        setOrdenDetalleMobile(null);
+                                        handleEditarOrden(ord);
+                                    }}
+                                >
+                                    Ver / Editar Orden
+                                </Button>
+                                <Button
+                                    variant="outline-success"
+                                    className="w-100 py-2 fw-semibold"
+                                    onClick={() => {
+                                        const id = ordenDetalleMobile.id;
+                                        setOrdenDetalleMobile(null);
+                                        handleVerPdf(id);
+                                    }}
+                                >
+                                    Imprimir Documento PDF
+                                </Button>
+                                {esEliminable && (
+                                    <Button
+                                        variant="outline-danger"
+                                        className="w-100 py-2 fw-semibold"
+                                        onClick={() => {
+                                            const id = ordenDetalleMobile.id;
+                                            setOrdenDetalleMobile(null);
+                                            handleEliminarClick(id);
+                                        }}
+                                    >
+                                        Eliminar Orden
+                                    </Button>
+                                )}
+                            </Modal.Footer>
+                        </>
+                    );
+                })()}
+            </Modal>
 
             <OrdenModal
                 show={showModal}

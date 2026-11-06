@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "url": "https://taller-backend-a7rb.onrender.com/actualizaciones/descargar",
-  "notes": "Novedades v1.0.1: Selección de repuestos con autocompletado de precios, blindaje de modales, tablas paginadas, menú lateral retráctil e instalador ejecutable directo."
+  "notes": "Novedades v1.0.2: Interfaz móvil tipo App Bancaria de 1 sola línea compacta, Bottom Sheet táctil para detalles y acciones, nombres de PDF legibles e indicador de versión."
 }
