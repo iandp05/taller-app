@@ -3,7 +3,7 @@ import urllib.request
 import json
 import os
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 REMOTE_UPDATE_MANIFEST_URLS = [
     "https://raw.githubusercontent.com/iandp05/taller-app/main/version.json",
     "https://taller-backend-a7rb.onrender.com/version.json"

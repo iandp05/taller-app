@@ -40,7 +40,8 @@ export const UpdateModal: React.FC = () => {
         const verificar = async () => {
             try {
                 const res = await checkActualizaciones();
-                if (isMounted && res && res.hay_actualizacion) {
+                const versionAplicada = localStorage.getItem('version_aplicada');
+                if (isMounted && res && res.hay_actualizacion && res.version_disponible !== versionAplicada) {
                     setInfoUpdate(res);
                     setShow(true);
                 }
@@ -83,6 +84,9 @@ export const UpdateModal: React.FC = () => {
                         clearInterval(pollingIntervalRef.current);
                         setDescargando(false);
                         setCompletado(true);
+                        if (infoUpdate) {
+                            localStorage.setItem('version_aplicada', infoUpdate.version_disponible);
+                        }
 
                         // Reiniciar o recargar la aplicación en 2.5s
                         setTimeout(() => {
