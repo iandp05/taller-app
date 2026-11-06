@@ -184,7 +184,7 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
         e.preventDefault();
         setErrorMsg(null);
 
-        if (vehiculoId === 0) {
+        if (!vehiculoId || vehiculoId === 0 || vehiculoId === '0') {
             setErrorMsg("Por favor selecciona un vehículo.");
             return;
         }
@@ -199,8 +199,11 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
             return;
         }
 
-        const vehiculoObj = vehiculos.find(v => v.id === vehiculoId);
-        if (!vehiculoObj) return;
+        const vehiculoObj = vehiculos.find(v => String(v.id) === String(vehiculoId));
+        if (!vehiculoObj) {
+            setErrorMsg("No se encontró el vehículo seleccionado.");
+            return;
+        }
 
         if (cargando) return;
         setCargando(true); 
@@ -257,10 +260,10 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
                                 <Form.Label className="fw-bold">Vehículo *</Form.Label>
                                 <Form.Select 
                                     value={vehiculoId} 
-                                    onChange={(e) => setVehiculoId(Number(e.target.value))}
+                                    onChange={(e) => setVehiculoId(e.target.value)}
                                     disabled={!!presupuestoEditando}
                                 >
-                                    <option value={0}>Selecciona un vehículo...</option>
+                                    <option value="">Selecciona un vehículo...</option>
                                     {vehiculos.map(v => (
                                         <option key={v.id} value={v.id}>{v.patente} - {v.marca} {v.modelo}</option>
                                     ))}
@@ -273,9 +276,9 @@ export default function PresupuestoModal({ show, handleClose, onPresupuestoSaved
                                 <Form.Label className="fw-bold">Mecánico Responsable</Form.Label>
                                 <Form.Select
                                     value={mecanicoId}
-                                    onChange={(e) => setMecanicoId(Number(e.target.value))}
+                                    onChange={(e) => setMecanicoId(e.target.value)}
                                 >
-                                    <option value={0}>Sin asignar (Opcional)</option>
+                                    <option value="">Sin asignar (Opcional)</option>
                                     {empleados.map(emp => (
                                         <option key={emp.id} value={emp.id}>
                                             {emp.nombre} ({emp.rol})

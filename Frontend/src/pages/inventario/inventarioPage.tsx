@@ -1,6 +1,6 @@
 // Frontend/src/pages/inventario/inventarioPage.tsx
 import { useEffect, useState } from 'react';
-import { Button, Table, Card, Badge, Form, InputGroup, Pagination, Row, Col, Modal, Alert } from 'react-bootstrap';
+import { Button, Table, Card, Badge, Form, InputGroup, Pagination, Row, Col, Modal, Alert, ListGroup } from 'react-bootstrap';
 import { Producto } from '../../types';
 import { getProductos, deleteProducto, updateProducto } from '../../api/inventarioApi';
 import InventarioModal from './inventarioModal';
@@ -127,6 +127,9 @@ export default function InventarioPage() {
     const [idProductoAEliminar, setIdProductoAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState('');
 
+    // Estado para ver el detalle en Bottom Sheet/Modal Móvil (Estilo App Bancaria)
+    const [productoDetalleMobile, setProductoDetalleMobile] = useState<Producto | null>(null);
+
     const [busqueda, setBusqueda] = useState('');
     const [paginaActual, setPaginaActual] = useState(1);
     const itemsPorPagina = 5;
@@ -211,46 +214,90 @@ export default function InventarioPage() {
                         </Col>
                     </Row>
 
-                    <Table striped hover responsive className="mb-0 align-middle">
-                        <thead className="table-dark">
-                            <tr>
-                                <th>Código</th>
-                                <th>Nombre / Pieza</th>
-                                <th>Categoría</th>
-                                <th>Precio</th>
-                                <th>Stock Actual</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {productosPaginados.length === 0 ? (
+                    {/* VISTA ESCRITORIO (>= 768px): Tabla Clásica Bootstrap */}
+                    <div className="d-none d-md-block">
+                        <Table striped hover responsive className="mb-0 align-middle">
+                            <thead className="table-dark">
                                 <tr>
-                                    <td colSpan={6} className="text-center py-4 text-muted">
-                                        No se encontraron productos que coincidan con la búsqueda.
-                                    </td>
+                                    <th>Código</th>
+                                    <th>Nombre / Pieza</th>
+                                    <th>Categoría</th>
+                                    <th>Precio</th>
+                                    <th>Stock Actual</th>
+                                    <th>Acciones</th>
                                 </tr>
-                            ) : (
-                                productosPaginados.map((producto) => (
-                                    <tr key={producto.id}>
-                                        <td className="fw-bold font-monospace">{producto.codigo || '-'}</td>
-                                        <td className="fw-bold">{producto.nombre}</td>
-                                        <td>{producto.categoria}</td>
-                                        <td className="fw-bold text-success">${producto.precio.toLocaleString()}</td>
-                                        <td>
-                                            <span className="me-2 fw-semibold">{producto.cantidad} u.</span>
-                                            {producto.cantidad <= producto.stock_critico && (
-                                                <Badge bg="danger">Stock Bajo</Badge>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <Button variant="outline-primary" size="sm" className="me-2 mb-1" onClick={() => handleEditarProducto(producto)}>Editar</Button>
-                                            <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarProductoClick(producto.id)}>Eliminar</Button>
+                            </thead>
+                            <tbody>
+                                {productosPaginados.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-4 text-muted">
+                                            No se encontraron productos que coincidan con la búsqueda.
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </Table>
+                                ) : (
+                                    productosPaginados.map((producto) => (
+                                        <tr key={producto.id}>
+                                            <td className="fw-bold font-monospace">{producto.codigo || '-'}</td>
+                                            <td className="fw-bold">{producto.nombre}</td>
+                                            <td>{producto.categoria}</td>
+                                            <td className="fw-bold text-success">${producto.precio.toLocaleString()}</td>
+                                            <td>
+                                                <span className="me-2 fw-semibold">{producto.cantidad} u.</span>
+                                                {producto.cantidad <= producto.stock_critico && (
+                                                    <Badge bg="danger">Stock Bajo</Badge>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <Button variant="outline-primary" size="sm" className="me-2 mb-1" onClick={() => handleEditarProducto(producto)}>Editar</Button>
+                                                <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarProductoClick(producto.id)}>Eliminar</Button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+
+                    {/* VISTA MÓVIL (< 768px): Lista Compacta 1 Línea Estilo App Bancaria */}
+                    <div className="d-md-none">
+                        {productosPaginados.length === 0 ? (
+                            <div className="text-center py-4 text-muted">
+                                No se encontraron productos.
+                            </div>
+                        ) : (
+                            <ListGroup variant="flush">
+                                {productosPaginados.map((producto) => (
+                                    <ListGroup.Item
+                                        key={producto.id}
+                                        action
+                                        onClick={() => setProductoDetalleMobile(producto)}
+                                        className="d-flex align-items-center justify-content-between py-3 px-2 border-bottom cursor-pointer"
+                                    >
+                                        <div className="text-truncate me-2" style={{ maxWidth: '65%' }}>
+                                            <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.95rem' }}>
+                                                {producto.codigo ? `${producto.codigo} • ` : ''}{producto.nombre}
+                                            </div>
+                                            <div className="text-muted small text-truncate">
+                                                {producto.categoria} • Stock: {producto.cantidad} u.
+                                            </div>
+                                        </div>
+
+                                        <div className="text-end flex-shrink-0 d-flex align-items-center gap-2">
+                                            <div>
+                                                <div className="fw-bold text-success" style={{ fontSize: '0.92rem' }}>
+                                                    ${producto.precio.toLocaleString()}
+                                                </div>
+                                                {producto.cantidad <= producto.stock_critico && (
+                                                    <Badge bg="danger" style={{ fontSize: '0.65rem' }}>Bajo</Badge>
+                                                )}
+                                            </div>
+                                            <span className="text-muted fw-bold fs-5">›</span>
+                                        </div>
+                                    </ListGroup.Item>
+                                ))}
+                            </ListGroup>
+                        )}
+                    </div>
 
                     {totalPaginas > 1 && (
                         <div className="d-flex justify-content-end mt-3">
@@ -277,6 +324,71 @@ export default function InventarioPage() {
                     )}
                 </Card.Body>
             </Card>
+
+            {/* Bottom Sheet Modal Móvil */}
+            <Modal
+                show={!!productoDetalleMobile}
+                onHide={() => setProductoDetalleMobile(null)}
+                centered
+            >
+                {productoDetalleMobile && (
+                    <>
+                        <Modal.Header closeButton className="bg-dark text-white">
+                            <Modal.Title className="fs-5 fw-bold">
+                                Repuesto {productoDetalleMobile.codigo || ''}
+                            </Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body className="p-3">
+                            <div className="p-3 bg-light border rounded mb-3">
+                                <h5 className="fw-bold text-dark mb-1">{productoDetalleMobile.nombre}</h5>
+                                <span className="fw-bold text-success fs-5">${productoDetalleMobile.precio.toLocaleString()}</span>
+                            </div>
+
+                            <div className="mb-2">
+                                <small className="text-muted d-block">Código de Pieza:</small>
+                                <strong className="font-monospace text-dark">{productoDetalleMobile.codigo || 'Sin código'}</strong>
+                            </div>
+
+                            <div className="mb-2">
+                                <small className="text-muted d-block">Categoría:</small>
+                                <span className="text-dark">{productoDetalleMobile.categoria}</span>
+                            </div>
+
+                            <div className="mb-2">
+                                <small className="text-muted d-block">Stock Disponible / Mínimo Requerido:</small>
+                                <span className="fw-bold text-dark me-2">{productoDetalleMobile.cantidad} unidades</span>
+                                {productoDetalleMobile.cantidad <= productoDetalleMobile.stock_critico && (
+                                    <Badge bg="danger">Stock Crítico ({productoDetalleMobile.stock_critico})</Badge>
+                                )}
+                            </div>
+                        </Modal.Body>
+                        <Modal.Footer className="d-flex flex-column gap-2">
+                            <Button
+                                variant="primary"
+                                className="w-100 py-2 fw-bold"
+                                onClick={() => {
+                                    const p = productoDetalleMobile;
+                                    setProductoDetalleMobile(null);
+                                    handleEditarProducto(p);
+                                }}
+                            >
+                                Editar Repuesto
+                            </Button>
+                            <Button
+                                variant="outline-danger"
+                                className="w-100 py-2 fw-semibold"
+                                onClick={() => {
+                                    const id = productoDetalleMobile.id;
+                                    setProductoDetalleMobile(null);
+                                    handleEliminarProductoClick(id);
+                                }}
+                            >
+                                Eliminar Repuesto
+                            </Button>
+                        </Modal.Footer>
+                    </>
+                )}
+            </Modal>
 
             <InventarioModal show={showModal} handleClose={() => setShowModal(false)} onProductoSaved={cargarInventario} productoEditando={productoSeleccionado} />
 

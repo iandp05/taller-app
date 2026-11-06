@@ -337,8 +337,8 @@ export default function FacturaEmisionModal({ show, handleClose, onFacturaSaved,
                         <Col md={2}>
                             <Form.Group>
                                 <Form.Label>Mecánico</Form.Label>
-                                <Form.Select value={mecanicoId} onChange={(e) => setMecanicoId(Number(e.target.value))}>
-                                    <option value={0}>Sin asignar</option>
+                                <Form.Select value={mecanicoId} onChange={(e) => setMecanicoId(e.target.value)}>
+                                    <option value="">Sin asignar</option>
                                     {empleados.map(emp => (
                                         <option key={emp.id} value={emp.id}>{emp.nombre}</option>
                                     ))}

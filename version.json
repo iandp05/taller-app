@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "url": "https://taller-backend-a7rb.onrender.com/actualizaciones/descargar",
-  "notes": "Novedades v1.0.2: Interfaz móvil tipo App Bancaria de 1 sola línea compacta, Bottom Sheet táctil para detalles y acciones, nombres de PDF legibles e indicador de versión."
+  "notes": "Novedades v1.0.3: Corrección en la creación de presupuestos y asignación de mecánicos (UUIDs), y extensión de la interfaz móvil estilo App Bancaria a Clientes, Vehículos, Inventario, Facturación y Personal."
 }

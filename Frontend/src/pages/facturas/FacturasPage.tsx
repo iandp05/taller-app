@@ -1,6 +1,6 @@
 // Frontend/src/pages/facturas/FacturasPage.tsx
 import { useEffect, useState } from 'react';
-import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Badge, Modal, Alert } from 'react-bootstrap';
+import { Button, Table, Card, Form, InputGroup, Pagination, Row, Col, Badge, Modal, Alert, ListGroup } from 'react-bootstrap';
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import { Factura, Vehiculo, Cliente, ConfiguracionTaller } from '../../types';
 import { getFacturas, deleteFactura } from '../../api/facturasApi';
@@ -26,6 +26,9 @@ export default function FacturasPage() {
     const [showStockModal, setShowStockModal] = useState(false);
     const [facturaIdAEliminar, setFacturaIdAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    // Estado para ver el detalle en Bottom Sheet/Modal Móvil (Estilo App Bancaria)
+    const [facturaDetalleMobile, setFacturaDetalleMobile] = useState<Factura | null>(null);
 
     const [busqueda, setBusqueda] = useState('');
     const [paginaActual, setPaginaActual] = useState(1);
@@ -125,6 +128,7 @@ export default function FacturasPage() {
     return (
         <div>
             {errorMsg && <Alert variant="danger" dismissible onClose={() => setErrorMsg(null)} className="mb-3">{errorMsg}</Alert>}
+
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 mb-md-4">
                 <h2 className="mb-0">Facturación y Remitos</h2>
                 <Button variant="success" onClick={() => setShowEmisionModal(true)} className="w-100 w-sm-auto">
@@ -134,8 +138,8 @@ export default function FacturasPage() {
 
             <Card className="shadow-sm">
                 <Card.Body>
-                    <Row className="mb-3">
-                        <Col md={6}>
+                    <Row className="mb-3 align-items-center">
+                        <Col md={8}>
                             <InputGroup>
                                 <InputGroup.Text>Buscar</InputGroup.Text>
                                 <Form.Control
@@ -148,69 +152,116 @@ export default function FacturasPage() {
                         </Col>
                     </Row>
 
-                    <Table striped hover responsive className="mb-0 align-middle">
-                        <thead className="table-dark">
-                            <tr>
-                                <th>Comprobante</th>
-                                <th>Fecha</th>
-                                <th>Cliente</th>
-                                <th>Vehículo</th>
-                                <th>Total</th>
-                                <th>CAE / Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {facturasPaginadas.length === 0 ? (
+                    {/* VISTA ESCRITORIO (>= 768px): Tabla Clásica Bootstrap */}
+                    <div className="d-none d-md-block">
+                        <Table striped hover responsive className="mb-0 align-middle">
+                            <thead className="table-dark">
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4 text-muted">
-                                        No se encontraron comprobantes emitidos.
-                                    </td>
+                                    <th>Comprobante</th>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Vehículo</th>
+                                    <th>Total</th>
+                                    <th>CAE / Estado</th>
+                                    <th>Acciones</th>
                                 </tr>
-                            ) : (
-                                facturasPaginadas.map((factura) => {
-                                    const vehiculo = getVehiculo(factura.vehiculo_id);
+                            </thead>
+                            <tbody>
+                                {facturasPaginadas.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="text-center py-4 text-muted">
+                                            No se encontraron comprobantes emitidos.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    facturasPaginadas.map((factura) => {
+                                        const vehiculo = getVehiculo(factura.vehiculo_id);
+                                        const cliente = getCliente(factura.cliente_id);
+                                        const nroCompleto = `${factura.punto_venta}-${factura.numero_comprobante.toString().padStart(8, '0')}`;
+
+                                        return (
+                                            <tr key={factura.id}>
+                                                <td>
+                                                    <div>
+                                                        {getTipoBadge(factura.tipo_comprobante)}
+                                                        <span className="ms-2 fw-bold">{nroCompleto}</span>
+                                                    </div>
+                                                </td>
+                                                <td>{formatearFecha(factura.fecha_emision)}</td>
+                                                <td className="fw-semibold text-truncate" style={{ maxWidth: '150px' }}>
+                                                    {cliente?.nombre || 'Consumidor Final'}
+                                                </td>
+                                                <td>
+                                                    {vehiculo ? (
+                                                        <div>
+                                                            <Badge bg="secondary" className="me-1">{vehiculo.patente}</Badge>
+                                                            <small className="text-muted d-block">{vehiculo.marca} {vehiculo.modelo}</small>
+                                                        </div>
+                                                    ) : '---'}
+                                                </td>
+                                                <td className="fw-bold text-success">${formatearMoneda(factura.total)}</td>
+                                                <td>
+                                                    {factura.cae ? (
+                                                        <Badge bg="success" className="px-2 py-1">CAE Asignado</Badge>
+                                                    ) : (
+                                                        <Badge bg="light" text="secondary" className="border px-2 py-1">Interno / Sin CAE</Badge>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <Button variant="outline-success" size="sm" className="me-2 mb-1" onClick={() => handleVerPdf(factura)}>Imprimir</Button>
+                                                    <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarClick(factura.id)}>Eliminar</Button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </Table>
+                    </div>
+
+                    {/* VISTA MÓVIL (< 768px): Lista Compacta 1 Línea Estilo App Bancaria */}
+                    <div className="d-md-none">
+                        {facturasPaginadas.length === 0 ? (
+                            <div className="text-center py-4 text-muted">
+                                No se encontraron comprobantes.
+                            </div>
+                        ) : (
+                            <ListGroup variant="flush">
+                                {facturasPaginadas.map((factura) => {
                                     const cliente = getCliente(factura.cliente_id);
                                     const nroCompleto = `${factura.punto_venta}-${factura.numero_comprobante.toString().padStart(8, '0')}`;
 
                                     return (
-                                        <tr key={factura.id}>
-                                            <td>
-                                                <div>
-                                                    {getTipoBadge(factura.tipo_comprobante)}
-                                                    <span className="ms-2 fw-bold">{nroCompleto}</span>
+                                        <ListGroup.Item
+                                            key={factura.id}
+                                            action
+                                            onClick={() => setFacturaDetalleMobile(factura)}
+                                            className="d-flex align-items-center justify-content-between py-3 px-2 border-bottom cursor-pointer"
+                                        >
+                                            <div className="text-truncate me-2" style={{ maxWidth: '65%' }}>
+                                                <div className="fw-bold text-dark text-truncate" style={{ fontSize: '0.95rem' }}>
+                                                    {factura.tipo_comprobante} {nroCompleto}
                                                 </div>
-                                            </td>
-                                            <td>{formatearFecha(factura.fecha_emision)}</td>
-                                            <td className="fw-semibold text-truncate" style={{ maxWidth: '150px' }}>
-                                                {cliente?.nombre || 'Consumidor Final'}
-                                            </td>
-                                            <td>
-                                                {vehiculo ? (
-                                                    <div>
-                                                        <Badge bg="secondary" className="me-1">{vehiculo.patente}</Badge>
-                                                        <small className="text-muted d-block">{vehiculo.marca} {vehiculo.modelo}</small>
+                                                <div className="text-muted small text-truncate">
+                                                    {cliente?.nombre || 'Consumidor Final'} • {formatearFecha(factura.fecha_emision)}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-end flex-shrink-0 d-flex align-items-center gap-2">
+                                                <div>
+                                                    <div className="fw-bold text-success" style={{ fontSize: '0.92rem' }}>
+                                                        ${formatearMoneda(factura.total)}
                                                     </div>
-                                                ) : '---'}
-                                            </td>
-                                            <td className="fw-bold text-success">${formatearMoneda(factura.total)}</td>
-                                            <td>
-                                                {factura.cae ? (
-                                                    <Badge bg="success" className="px-2 py-1">CAE Asignado</Badge>
-                                                ) : (
-                                                    <Badge bg="light" text="secondary" className="border px-2 py-1">Interno / Sin CAE</Badge>
-                                                )}
-                                            </td>
-                                            <td>
-                                                <Button variant="outline-success" size="sm" className="me-2 mb-1" onClick={() => handleVerPdf(factura)}>Imprimir</Button>
-                                                <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarClick(factura.id)}>Eliminar</Button>
-                                            </td>
-                                        </tr>
+                                                    <div>{getTipoBadge(factura.tipo_comprobante)}</div>
+                                                </div>
+                                                <span className="text-muted fw-bold fs-5">›</span>
+                                            </div>
+                                        </ListGroup.Item>
                                     );
-                                })
-                            )}
-                        </tbody>
-                    </Table>
+                                })}
+                            </ListGroup>
+                        )}
+                    </div>
 
                     {totalPaginas > 1 && (
                         <div className="d-flex justify-content-end mt-3">
@@ -227,6 +278,91 @@ export default function FacturasPage() {
                     )}
                 </Card.Body>
             </Card>
+
+            {/* Bottom Sheet Modal Móvil */}
+            <Modal
+                show={!!facturaDetalleMobile}
+                onHide={() => setFacturaDetalleMobile(null)}
+                centered
+            >
+                {facturaDetalleMobile && (() => {
+                    const vehiculo = getVehiculo(facturaDetalleMobile.vehiculo_id);
+                    const cliente = getCliente(facturaDetalleMobile.cliente_id);
+                    const nroCompleto = `${facturaDetalleMobile.punto_venta}-${facturaDetalleMobile.numero_comprobante.toString().padStart(8, '0')}`;
+
+                    return (
+                        <>
+                            <Modal.Header closeButton className="bg-dark text-white">
+                                <Modal.Title className="fs-5 fw-bold">
+                                    {facturaDetalleMobile.tipo_comprobante} N° {nroCompleto}
+                                </Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body className="p-3">
+                                <div className="p-3 bg-light border rounded mb-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <span className="text-muted small">Tipo / Estado:</span>
+                                        <div>{getTipoBadge(facturaDetalleMobile.tipo_comprobante)}</div>
+                                    </div>
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <span className="text-muted small">Importe Total:</span>
+                                        <span className="fw-bold text-success fs-5">${formatearMoneda(facturaDetalleMobile.total)}</span>
+                                    </div>
+                                </div>
+
+                                <div className="mb-2">
+                                    <small className="text-muted d-block">Cliente (Facturado a):</small>
+                                    <strong className="text-dark">{cliente?.nombre || 'Consumidor Final'}</strong>
+                                    {cliente?.cuit && <span className="text-muted small ms-2">({cliente.cuit})</span>}
+                                </div>
+
+                                <div className="mb-2">
+                                    <small className="text-muted d-block">Vehículo Asociado:</small>
+                                    {vehiculo ? (
+                                        <strong className="text-dark">{vehiculo.patente} - {vehiculo.marca} {vehiculo.modelo}</strong>
+                                    ) : <span className="text-muted">No especificado</span>}
+                                </div>
+
+                                <div className="mb-2">
+                                    <small className="text-muted d-block">Fecha de Emisión:</small>
+                                    <span className="text-dark">{formatearFecha(facturaDetalleMobile.fecha_emision)}</span>
+                                </div>
+
+                                {facturaDetalleMobile.cae && (
+                                    <div className="mb-2">
+                                        <small className="text-muted d-block">CAE / Vencimiento:</small>
+                                        <span className="font-monospace text-dark fw-semibold">{facturaDetalleMobile.cae}</span>
+                                        {facturaDetalleMobile.cae_vencimiento && <span className="text-muted small ms-2">(Venc: {facturaDetalleMobile.cae_vencimiento})</span>}
+                                    </div>
+                                )}
+                            </Modal.Body>
+                            <Modal.Footer className="d-flex flex-column gap-2">
+                                <Button
+                                    variant="primary"
+                                    className="w-100 py-2 fw-bold"
+                                    onClick={() => {
+                                        const f = facturaDetalleMobile;
+                                        setFacturaDetalleMobile(null);
+                                        handleVerPdf(f);
+                                    }}
+                                >
+                                    Imprimir Comprobante PDF
+                                </Button>
+                                <Button
+                                    variant="outline-danger"
+                                    className="w-100 py-2 fw-semibold"
+                                    onClick={() => {
+                                        const id = facturaDetalleMobile.id;
+                                        setFacturaDetalleMobile(null);
+                                        handleEliminarClick(id);
+                                    }}
+                                >
+                                    Eliminar Comprobante
+                                </Button>
+                            </Modal.Footer>
+                        </>
+                    );
+                })()}
+            </Modal>
 
             <FacturaEmisionModal 
                 show={showEmisionModal} 
