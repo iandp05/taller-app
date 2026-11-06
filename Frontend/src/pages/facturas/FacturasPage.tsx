@@ -253,22 +253,28 @@ export default function FacturasPage() {
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => setShowPdfModal(false)}>Cerrar</Button>
-                    {facturaSeleccionadaPdf && (
-                        <PDFDownloadLink
-                            document={
-                                <FacturaTemplate 
-                                    factura={facturaSeleccionadaPdf} 
-                                    vehiculo={getVehiculo(facturaSeleccionadaPdf.vehiculo_id) || { id: '0', patente: 'S/P', marca: 'Vehículo', modelo: 'General' } as any}
-                                    cliente={getCliente(facturaSeleccionadaPdf.cliente_id) || { id: '0', nombre: 'Consumidor Final', cuit: '' } as any}
-                                    empresaConfig={configTaller}
-                                />
-                            }
-                            fileName={`${facturaSeleccionadaPdf.tipo_comprobante.replace(' ', '_')}_${facturaSeleccionadaPdf.punto_venta}-${facturaSeleccionadaPdf.numero_comprobante.toString().padStart(8, '0')}.pdf`}
-                            className="btn btn-primary fw-semibold px-4"
-                        >
-                            {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
-                        </PDFDownloadLink>
-                    )}
+                    {facturaSeleccionadaPdf && (() => {
+                        const tipoLimpio = facturaSeleccionadaPdf.tipo_comprobante.replace(/\s+/g, '_');
+                        const clienteNombre = (getCliente(facturaSeleccionadaPdf.cliente_id)?.nombre || 'Consumidor_Final').replace(/[^a-zA-Z0-9]/g, '_');
+                        const nombreArchivoPdf = `${tipoLimpio}_${facturaSeleccionadaPdf.numero_comprobante}_${clienteNombre}.pdf`;
+
+                        return (
+                            <PDFDownloadLink
+                                document={
+                                    <FacturaTemplate
+                                        factura={facturaSeleccionadaPdf}
+                                        vehiculo={getVehiculo(facturaSeleccionadaPdf.vehiculo_id) || { id: '0', patente: 'S/P', marca: 'Vehículo', modelo: 'General' } as any}
+                                        cliente={getCliente(facturaSeleccionadaPdf.cliente_id) || { id: '0', nombre: 'Consumidor Final', cuit: '' } as any}
+                                        empresaConfig={configTaller}
+                                    />
+                                }
+                                fileName={nombreArchivoPdf}
+                                className="btn btn-primary fw-semibold px-4"
+                            >
+                                {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
+                            </PDFDownloadLink>
+                        );
+                    })()}
                 </Modal.Footer>
             </Modal>
 

@@ -38,6 +38,7 @@ from modulos.factura import router as factura_router
 from modulos.configuracion import router as configuracion_router
 from modulos.actualizaciones import router as actualizaciones_router
 from modulos.sync import router as sync_router
+from modulos.pdf import router as pdf_router
 
 from modulos.usuarios.services import get_password_hash
 
@@ -135,6 +136,7 @@ app.include_router(factura_router.router)
 app.include_router(configuracion_router.router)
 app.include_router(actualizaciones_router.router)
 app.include_router(sync_router.router)
+app.include_router(pdf_router.router)
 
 # ==========================================
 # 5. SERVIR INTERFAZ WEB SPA (Frontend React)

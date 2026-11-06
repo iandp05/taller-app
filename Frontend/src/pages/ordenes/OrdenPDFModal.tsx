@@ -7,7 +7,6 @@ import { getOrdenById } from '../../api/ordenesApi';
 import { getVehiculos } from '../../api/vehiculosApi';
 import { getClientes } from '../../api/clientesApi'; 
 import { getConfiguracion } from '../../api/configuracionApi';
-import { formatEmpresaConfig } from '../../config/empresaConfig';
 
 interface OrdenPdfModalProps {
     show: boolean;
@@ -80,8 +79,6 @@ export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfMo
         }
     }, [show, ordenId]);
 
-    const idFormateado = ordenId ? ordenId.toString().slice(0, 8) : '';
-
     return (
         <Modal show={show} onHide={handleClose} size="xl" centered>
             <Modal.Header closeButton className="bg-dark text-white">
@@ -106,15 +103,21 @@ export default function OrdenPdfModal({ show, handleClose, ordenId }: OrdenPdfMo
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={handleClose}>Cerrar</Button>
-                {!cargandoPDF && ordenCompleta && (
-                    <PDFDownloadLink
-                        document={<OrdenReparacionTemplate planilla={ordenCompleta} vehiculo={vehiculo} cliente={cliente} empresaConfig={configTaller} />}
-                        fileName={`${formatEmpresaConfig(configTaller).pdfFileNamePrefix}_Orden_${idFormateado}.pdf`}
-                        className="btn btn-primary fw-semibold px-4"
-                    >
-                        {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
-                    </PDFDownloadLink>
-                )}
+                {!cargandoPDF && ordenCompleta && (() => {
+                    const patenteLimpia = (vehiculo?.patente || 'SP').replace(/[^a-zA-Z0-9]/g, '');
+                    const numCorto = ordenCompleta.id.toString().length > 10 ? ordenCompleta.id.toString().slice(0, 6).toUpperCase() : ordenCompleta.id;
+                    const nombreArchivo = `Orden_${numCorto}_${patenteLimpia}.pdf`;
+
+                    return (
+                        <PDFDownloadLink
+                            document={<OrdenReparacionTemplate planilla={ordenCompleta} vehiculo={vehiculo} cliente={cliente} empresaConfig={configTaller} />}
+                            fileName={nombreArchivo}
+                            className="btn btn-primary fw-semibold px-4"
+                        >
+                            {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
+                        </PDFDownloadLink>
+                    );
+                })()}
             </Modal.Footer>
         </Modal>
     );

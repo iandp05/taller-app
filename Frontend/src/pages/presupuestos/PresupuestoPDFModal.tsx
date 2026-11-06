@@ -78,8 +78,6 @@ export default function PresupuestoPDFModal({ show, handleClose, presupuestoId }
         }
     }, [show, presupuestoId]);
 
-    const numeroPresupuestoStr = presupuestoId ? presupuestoId.toString().slice(0, 8) : '';
-
     return (
         <Modal show={show} onHide={handleClose} size="xl" centered>
             <Modal.Header closeButton className="bg-dark text-white">
@@ -104,15 +102,21 @@ export default function PresupuestoPDFModal({ show, handleClose, presupuestoId }
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={handleClose}>Cerrar</Button>
-                {!cargandoPDF && presupuestoCompleto && (
-                    <PDFDownloadLink
-                        document={<PresupuestoTemplate presupuesto={presupuestoCompleto} vehiculo={vehiculo} cliente={cliente} empresaConfig={configTaller} />}
-                        fileName={`Presupuesto_${numeroPresupuestoStr}.pdf`}
-                        className="btn btn-primary fw-semibold px-4"
-                    >
-                        {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
-                    </PDFDownloadLink>
-                )}
+                {!cargandoPDF && presupuestoCompleto && (() => {
+                    const clienteNombre = (cliente?.nombre || 'Cliente').replace(/[^a-zA-Z0-9]/g, '_');
+                    const numCorto = presupuestoCompleto.id.toString().length > 10 ? presupuestoCompleto.id.toString().slice(0, 6).toUpperCase() : presupuestoCompleto.id;
+                    const nombreArchivo = `Presupuesto_${numCorto}_${clienteNombre}.pdf`;
+
+                    return (
+                        <PDFDownloadLink
+                            document={<PresupuestoTemplate presupuesto={presupuestoCompleto} vehiculo={vehiculo} cliente={cliente} empresaConfig={configTaller} />}
+                            fileName={nombreArchivo}
+                            className="btn btn-primary fw-semibold px-4"
+                        >
+                            {({ loading }) => (loading ? 'Preparando...' : 'Descargar PDF')}
+                        </PDFDownloadLink>
+                    );
+                })()}
             </Modal.Footer>
         </Modal>
     );
