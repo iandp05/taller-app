@@ -88,7 +88,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="API Taller Mecánico",
     description="Sistema ERP/CRM para gestión local de clientes, vehículos, stock y órdenes de trabajo.",
-    version="1.0.1",
+    version="1.0.3",
     lifespan=lifespan
 )
 
