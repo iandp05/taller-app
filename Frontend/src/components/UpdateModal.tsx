@@ -21,7 +21,6 @@ export const UpdateModal: React.FC = () => {
             }
         };
 
-        // Verificar al iniciar y cada 30 minutos
         verificar();
         const interval = setInterval(verificar, 30 * 60 * 1000);
 
@@ -35,7 +34,7 @@ export const UpdateModal: React.FC = () => {
         if (infoUpdate?.download_url) {
             window.open(infoUpdate.download_url, '_blank');
         } else {
-            window.open('https://github.com/iandp05/taller-app/releases/latest', '_blank');
+            window.open('https://taller-backend-a7rb.onrender.com/', '_blank');
         }
     };
 
@@ -43,34 +42,43 @@ export const UpdateModal: React.FC = () => {
 
     return (
         <Modal show={show} onHide={() => setShow(false)} centered backdrop="static" size="lg">
-            <Modal.Header closeButton className="bg-primary text-white">
-                <Modal.Title className="d-flex align-items-center gap-2">
-                    🚀 <span>¡Nueva Actualización Disponible!</span>
-                    <Badge bg="warning" text="dark" className="ms-2">v{infoUpdate.version_disponible}</Badge>
+            <Modal.Header closeButton className="bg-dark text-white border-bottom border-secondary">
+                <Modal.Title className="d-flex align-items-center gap-2 fs-5 fw-bold">
+                    <span>Actualización del Sistema Disponible</span>
+                    <Badge bg="primary" className="ms-2 font-monospace">v{infoUpdate.version_disponible}</Badge>
                 </Modal.Title>
             </Modal.Header>
-            <Modal.Body className="p-4">
-                <div className="alert alert-info d-flex align-items-center gap-2 mb-3">
-                    <strong>Versión instalada actual:</strong> <code>v{infoUpdate.version_actual}</code>
-                    <span className="ms-auto">➡️</span>
-                    <strong>Nueva versión lista:</strong> <code>v{infoUpdate.version_disponible}</code>
+            <Modal.Body className="p-4 bg-white">
+                <div className="p-3 bg-light border rounded d-flex align-items-center justify-content-between mb-4">
+                    <div>
+                        <span className="text-muted small d-block">Versión Instalada:</span>
+                        <strong className="text-secondary font-monospace fs-6">v{infoUpdate.version_actual}</strong>
+                    </div>
+                    <div className="text-muted fw-bold">→</div>
+                    <div className="text-end">
+                        <span className="text-muted small d-block">Versión Disponible:</span>
+                        <strong className="text-primary font-monospace fs-6">v{infoUpdate.version_disponible}</strong>
+                    </div>
                 </div>
 
-                <h5 className="fw-bold mb-2 text-dark">📋 Novedades de esta actualización:</h5>
-                <div className="p-3 bg-light border rounded text-secondary mb-3" style={{ whiteSpace: 'pre-line', fontSize: '0.95rem' }}>
-                    {infoUpdate.release_notes || "Corrección de errores, mejoras de rendimiento y optimizaciones del sistema."}
+                <h6 className="fw-bold text-dark mb-2">Notas de la Versión:</h6>
+                <div
+                    className="p-3 bg-light border rounded text-secondary mb-3"
+                    style={{ whiteSpace: 'pre-line', fontSize: '0.9rem', lineHeight: '1.5' }}
+                >
+                    {infoUpdate.release_notes || "Mejoras generales de rendimiento, estabilidad y optimización de componentes."}
                 </div>
 
                 <p className="text-muted small mb-0">
-                    💡 Se recomienda actualizar la aplicación para contar con las últimas funciones, correcciones de errores y sincronización en la nube.
+                    Se recomienda actualizar el sistema para mantener la compatibilidad con el servidor de sincronización y disponer de las últimas correcciones.
                 </p>
             </Modal.Body>
-            <Modal.Footer className="bg-light">
-                <Button variant="outline-secondary" onClick={() => setShow(false)}>
-                    Más tarde
+            <Modal.Footer className="bg-light border-top-0 pt-0 pb-3 px-4">
+                <Button variant="outline-secondary" onClick={() => setShow(false)} className="px-3">
+                    Posponer
                 </Button>
-                <Button variant="success" onClick={handleActualizarClick} className="fw-bold px-4">
-                    ⬇️ Descargar e Instalar v{infoUpdate.version_disponible}
+                <Button variant="primary" onClick={handleActualizarClick} className="fw-semibold px-4">
+                    Descargar e Instalar v{infoUpdate.version_disponible}
                 </Button>
             </Modal.Footer>
         </Modal>

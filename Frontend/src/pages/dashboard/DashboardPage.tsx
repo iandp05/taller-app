@@ -1,4 +1,4 @@
-// Frontend/src/pages/DashboardPage.tsx
+// Frontend/src/pages/dashboard/DashboardPage.tsx
 import { useEffect, useState } from 'react';
 import { Card, Row, Col, Table, Badge } from 'react-bootstrap';
 import { getOrdenes } from '../../api/ordenesApi';
@@ -14,16 +14,16 @@ export default function DashboardPage() {
         getProductos().then(setProductos).catch(console.error);
     }, []);
 
-    const ingresados = ordenes.filter(o => o.estado === 'Ingresado').length;
-    const enReparacion = ordenes.filter(o => o.estado === 'En Reparación').length;
-    const listosParaEntregar = ordenes.filter(o => o.estado === 'Listo para Entregar').length;
+    const ingresados = ordenes.filter(o => o.estado === 'Ingresado' || o.estado === 'Pendiente').length;
+    const enReparacion = ordenes.filter(o => o.estado === 'En Reparación' || o.estado === 'En Taller').length;
+    const listosParaEntregar = ordenes.filter(o => o.estado === 'Listo para Entregar' || o.estado === 'Terminado').length;
     
     const repuestosCriticos = productos.filter(p => p.cantidad <= p.stock_critico);
 
     return (
         <div>
             <h2 className="mb-4">Panel de Control General</h2>
-            
+
             <Row className="mb-3 mb-md-4 g-3">
                 <Col xs={12} sm={4}>
                     <Card className="shadow-sm border-warning h-100">
@@ -54,7 +54,7 @@ export default function DashboardPage() {
             <Row>
                 <Col md={12}>
                     <Card className="shadow-sm border-0">
-                        <Card.Header className="bg-danger text-white fw-bold">
+                        <Card.Header className="bg-danger text-white fw-bold py-3">
                             Alertas de Reposición de Inventario
                         </Card.Header>
                         <Card.Body className="p-0">
@@ -64,7 +64,7 @@ export default function DashboardPage() {
                                 </div>
                             ) : (
                                 <Table responsive hover className="mb-0 align-middle">
-                                    <thead className="table-light">
+                                    <thead className="table-dark">
                                         <tr>
                                             <th>Repuesto / Pieza</th>
                                             <th>Categoría</th>

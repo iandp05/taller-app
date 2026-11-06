@@ -1,12 +1,12 @@
 // Frontend/src/App.tsx
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Importamos el Contexto de Autenticación
 import { AuthProvider, AuthContext } from './context/AuthContext';
 
-// Importamos la barra de navegación y el modal de actualización
-import Navbar from './components/Navbar';
+// Importamos el Sidebar lateral y el modal de actualización
+import Sidebar from './components/Sidebar';
 import UpdateModal from './components/UpdateModal';
 
 // Importamos todas tus páginas
@@ -35,20 +35,29 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 // 2. Componente de Enrutamiento: Controla qué partes de la interfaz se dibujan
 function AppContent() {
     const { user } = useContext(AuthContext);
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    if (!user) {
+        return (
+            <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+        );
+    }
 
     return (
-        <>
-            {/* Solo mostramos la barra superior y el modal de actualización si el usuario está logueado */}
-            {user && <Navbar />}
-            {user && <UpdateModal />}
+        <div className="d-flex flex-column flex-md-row min-vh-100 bg-light">
+            {/* Sidebar Lateral Fijo */}
+            <Sidebar
+                isCollapsedDesktop={isCollapsed}
+                onToggleDesktopCollapse={() => setIsCollapsed(!isCollapsed)}
+            />
+            <UpdateModal />
 
-            {/* Quitamos los márgenes si estamos en la pantalla de login */}
-            <div className={user ? "app-main-container px-2 px-sm-3 px-md-4 my-2 my-md-4" : ""}>
+            {/* Contenedor Principal Adaptativo */}
+            <div className="flex-grow-1 p-3 p-md-4 overflow-x-hidden" style={{ minWidth: 0 }}>
                 <Routes>
-                    {/* RUTA PÚBLICA */}
-                    <Route path="/login" element={<LoginPage />} />
-                    
-                    {/* RUTAS PRIVADAS Y BLINDADAS */}
                     <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
                     <Route path="/clientes" element={<ProtectedRoute><ClientesPage /></ProtectedRoute>} />
                     <Route path="/vehiculos" element={<ProtectedRoute><VehiculosPage /></ProtectedRoute>} />
@@ -58,9 +67,10 @@ function AppContent() {
                     <Route path="/presupuestos" element={<ProtectedRoute><PresupuestosPage /></ProtectedRoute>} />
                     <Route path="/facturas" element={<ProtectedRoute><FacturasPage /></ProtectedRoute>} />
                     <Route path="/configuracion" element={<ProtectedRoute><ConfiguracionPage /></ProtectedRoute>} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </div>
-        </>
+        </div>
     );
 }
 

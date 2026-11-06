@@ -53,9 +53,17 @@ def setup_test_database():
     yield
     Base.metadata.drop_all(bind=engine_test)
 
+from sqlalchemy import event
+
+@event.listens_for(engine_test, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
 @pytest.fixture
 def db_session():
-    """Provides a transactional database session for tests."""
+    """Provides a transactional database session for tests with foreign keys enforced."""
     connection = engine_test.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)

@@ -25,6 +25,7 @@ export default function OrdenesPage() {
     const [ordenIdAEliminar, setOrdenIdAEliminar] = useState<string | number | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+    // Búsqueda y Paginación
     const [busqueda, setBusqueda] = useState('');
     const [mostrarEntregados, setMostrarEntregados] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
@@ -37,7 +38,7 @@ export default function OrdenesPage() {
                 getVehiculos(),
                 getClientes()
             ]);
-            setOrdenes(ordenesData);
+            setOrdenes([...ordenesData].reverse());
             setVehiculos(vehiculosData);
             setClientes(clientesData);
         } catch (error) {
@@ -53,27 +54,24 @@ export default function OrdenesPage() {
         setPaginaActual(1);
     }, [busqueda, mostrarEntregados]);
 
-    const getVehiculo = (id: string | number) => vehiculos.find(v => v.id === id);
+    const getVehiculo = (id: string | number) => vehiculos.find(v => String(v.id) === String(id));
     const getCliente = (orden: OrdenTrabajo) => {
         if (orden.cliente) return orden.cliente;
-        if (orden.cliente_id) return clientes.find(c => c.id === orden.cliente_id);
+        if (orden.cliente_id) return clientes.find(c => String(c.id) === String(orden.cliente_id));
         const v = getVehiculo(orden.vehiculo_id);
-        if (v) return clientes.find(c => c.id === v.cliente_id);
-        return null;
+        return v?.cliente_id ? clientes.find(c => String(c.id) === String(v.cliente_id)) : undefined;
     };
 
-    const ordenesFiltradas = ordenes.filter(o => {
-        if (!mostrarEntregados && o.estado === 'Entregado') {
-            return false;
-        }
+    const ordenesFiltradas = ordenes.filter(orden => {
+        if (!mostrarEntregados && orden.estado === 'Entregado') return false;
 
         const termino = busqueda.toLowerCase();
-        const vehiculo = getVehiculo(o.vehiculo_id);
-        const cliente = getCliente(o);
+        const vehiculo = getVehiculo(orden.vehiculo_id);
+        const cliente = getCliente(orden);
 
-        const matchId = o.id.toString().includes(termino);
-        const matchEstado = o.estado.toLowerCase().includes(termino);
-        const matchFalla = o.descripcion_falla.toLowerCase().includes(termino);
+        const matchId = orden.id.toString().toLowerCase().includes(termino);
+        const matchEstado = orden.estado.toLowerCase().includes(termino);
+        const matchFalla = orden.descripcion_falla.toLowerCase().includes(termino);
         const matchPatente = vehiculo ? vehiculo.patente.toLowerCase().includes(termino) : false;
         const matchCliente = cliente ? cliente.nombre.toLowerCase().includes(termino) : false;
 
@@ -87,13 +85,13 @@ export default function OrdenesPage() {
 
     const handleNuevaOrden = () => { setOrdenSeleccionada(null); setShowModal(true); };
     const handleEditarOrden = (orden: OrdenTrabajo) => { setOrdenSeleccionada(orden); setShowModal(true); };
-    
+
     const handleVerPdf = (id: string | number) => {
         setPdfOrdenId(id);
         setShowPdfModal(true);
     };
 
-    const handleEliminarOrdenClick = (id: string | number) => {
+    const handleEliminarClick = (id: string | number) => {
         setOrdenIdAEliminar(id);
         setShowConfirmModal(true);
     };
@@ -130,9 +128,19 @@ export default function OrdenesPage() {
         }
     };
 
+    // Formateador de ID limpio acortado
+    const formatearIdOrden = (id: string | number) => {
+        const idStr = id.toString();
+        if (idStr.length > 10) {
+            return `#${idStr.slice(0, 6).toUpperCase()}`;
+        }
+        return `#${idStr.padStart(4, '0')}`;
+    };
+
     return (
         <div>
             {errorMsg && <Alert variant="danger" dismissible onClose={() => setErrorMsg(null)} className="mb-3">{errorMsg}</Alert>}
+
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3 mb-md-4">
                 <h2 className="mb-0">Órdenes de Trabajo</h2>
                 <Button variant="success" onClick={handleNuevaOrden} className="w-100 w-sm-auto">
@@ -155,7 +163,7 @@ export default function OrdenesPage() {
                             </InputGroup>
                         </Col>
                         <Col md={4} className="text-end">
-                            <Form.Check 
+                            <Form.Check
                                 type="switch"
                                 id="mostrar-entregados"
                                 label="Mostrar historial archivado"
@@ -173,8 +181,8 @@ export default function OrdenesPage() {
                                 <th>Fecha Ingreso</th>
                                 <th>Cliente</th>
                                 <th>Vehículo</th>
-                                <th>Mecánico</th> 
                                 <th>Estado</th>
+                                <th>Total</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -182,23 +190,23 @@ export default function OrdenesPage() {
                             {ordenesPaginadas.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} className="text-center py-4 text-muted">
-                                        No se encontraron órdenes de trabajo.
+                                        No se encontraron órdenes de trabajo que coincidan con la búsqueda.
                                     </td>
                                 </tr>
                             ) : (
                                 ordenesPaginadas.map((orden) => {
                                     const vehiculo = getVehiculo(orden.vehiculo_id);
                                     const cliente = getCliente(orden);
-                                    
                                     const esEliminable = orden.estado === 'Ingresado' || orden.estado === 'Pendiente';
 
                                     return (
                                         <tr key={orden.id}>
-                                            <td className="fw-bold">#{orden.id.toString().padStart(4, '0')}</td>
+                                            <td className="fw-bold">{formatearIdOrden(orden.id)}</td>
                                             <td>{new Date(orden.fecha_ingreso).toLocaleDateString()}</td>
-                                            
-                                            <td className="fw-semibold text-truncate" style={{ maxWidth: '150px' }}>
-                                                {cliente?.nombre || 'Sin Cliente'}
+
+                                            <td className="fw-semibold text-truncate" style={{ maxWidth: '160px' }}>
+                                                <div>{cliente?.nombre || 'Sin Cliente'}</div>
+                                                {cliente?.telefono && <small className="text-muted d-block">{cliente.telefono}</small>}
                                             </td>
 
                                             <td>
@@ -210,34 +218,18 @@ export default function OrdenesPage() {
                                                 ) : 'Desconocido'}
                                             </td>
 
-                                            <td>
-                                                {orden.mecanico?.nombre ? (
-                                                    <Badge bg="info" text="dark" className="fw-bold border border-info">
-                                                        {orden.mecanico.nombre}
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge bg="secondary" className="fw-normal">
-                                                        Sin Asignar
-                                                    </Badge>
-                                                )}
-                                            </td>
-                                            
                                             <td>{getEstadoBadge(orden.estado)}</td>
-                                            
+
+                                            <td className="fw-bold text-success">
+                                                ${orden.total.toLocaleString()}
+                                            </td>
+
                                             <td>
-                                                <Button variant="outline-success" size="sm" className="me-2 mb-1" onClick={() => handleVerPdf(orden.id)}>Imprimir</Button>
                                                 <Button variant="outline-primary" size="sm" className="me-2 mb-1" onClick={() => handleEditarOrden(orden)}>Ver / Editar</Button>
-                                                
-                                                <Button 
-                                                    variant={esEliminable ? "outline-danger" : "outline-secondary"} 
-                                                    size="sm" 
-                                                    className="mb-1" 
-                                                    onClick={() => handleEliminarOrdenClick(orden.id)}
-                                                    disabled={!esEliminable}
-                                                    title={!esEliminable ? "No se puede eliminar una orden en curso" : ""}
-                                                >
-                                                    Eliminar
-                                                </Button>
+                                                <Button variant="outline-danger" size="sm" className="me-2 mb-1" onClick={() => handleVerPdf(orden.id)}>PDF</Button>
+                                                {esEliminable && (
+                                                    <Button variant="outline-danger" size="sm" className="mb-1" onClick={() => handleEliminarClick(orden.id)}>Eliminar</Button>
+                                                )}
                                             </td>
                                         </tr>
                                     );
@@ -262,38 +254,46 @@ export default function OrdenesPage() {
                 </Card.Body>
             </Card>
 
-            <OrdenModal show={showModal} handleClose={() => setShowModal(false)} onOrdenSaved={cargarDatos} ordenEditando={ordenSeleccionada} />
-            <OrdenPdfModal show={showPdfModal} handleClose={() => setShowPdfModal(false)} ordenId={pdfOrdenId} />
+            <OrdenModal
+                show={showModal}
+                handleClose={() => setShowModal(false)}
+                ordenEditando={ordenSeleccionada}
+                onOrdenSaved={cargarDatos}
+            />
+
+            {pdfOrdenId && (
+                <OrdenPdfModal
+                    show={showPdfModal}
+                    handleClose={() => {
+                        setShowPdfModal(false);
+                        setPdfOrdenId(null);
+                    }}
+                    ordenId={pdfOrdenId}
+                />
+            )}
 
             <ConfirmModal
                 show={showConfirmModal}
-                title="Confirmar Eliminación"
-                message="¿Estás seguro de que deseas ELIMINAR esta orden de trabajo?"
-                confirmText="Sí, Continuar"
-                confirmVariant="danger"
                 onClose={() => setShowConfirmModal(false)}
                 onConfirm={handleConfirmarEliminacionOrden}
+                title="Confirmar eliminación"
+                message="¿Estás seguro de que deseas eliminar esta orden de trabajo?"
             />
 
             <Modal show={showStockModal} onHide={() => setShowStockModal(false)} centered>
-                <Modal.Header closeButton className="bg-light">
-                    <Modal.Title>Gestión de Inventario</Modal.Title>
+                <Modal.Header closeButton>
+                    <Modal.Title>Reponer Stock de Repuestos</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p className="mb-0">¿Deseas DEVOLVER los repuestos de esta orden al inventario?</p>
+                    <p>¿Deseas devolver al inventario los repuestos que estaban reservados o utilizados en esta orden de trabajo?</p>
                 </Modal.Body>
-                <Modal.Footer className="justify-content-between">
-                    <Button variant="secondary" onClick={() => setShowStockModal(false)}>
-                        Cancelar
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => handleEjecutarEliminacion(false)}>
+                        No reponer stock
                     </Button>
-                    <div>
-                        <Button variant="outline-danger" className="me-2" onClick={() => handleEjecutarEliminacion(false)}>
-                            No, solo borrar
-                        </Button>
-                        <Button variant="success" onClick={() => handleEjecutarEliminacion(true)}>
-                            Sí, devolver repuestos
-                        </Button>
-                    </div>
+                    <Button variant="success" onClick={() => handleEjecutarEliminacion(true)}>
+                        Sí, reponer stock
+                    </Button>
                 </Modal.Footer>
             </Modal>
         </div>

@@ -168,10 +168,11 @@ export default function PresupuestosPage() {
                                 presupuestosPaginados.map((presupuesto) => {
                                     const vehiculo = getVehiculo(presupuesto.vehiculo_id);
                                     const cliente = getCliente(presupuesto);
+                                    const idLimpio = presupuesto.id.toString().length > 10 ? `#${presupuesto.id.toString().slice(0, 6).toUpperCase()}` : `#${presupuesto.id.toString().padStart(4, '0')}`;
 
                                     return (
                                         <tr key={presupuesto.id}>
-                                            <td className="fw-bold">#{presupuesto.id.toString().padStart(4, '0')}</td>
+                                            <td className="fw-bold">{idLimpio}</td>
                                             <td>{new Date(presupuesto.fecha_creacion).toLocaleDateString()}</td>
                                             
                                             <td className="fw-semibold text-truncate" style={{ maxWidth: '150px' }}>
