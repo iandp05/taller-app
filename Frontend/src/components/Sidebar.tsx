@@ -16,6 +16,7 @@ import {
     FaCar,
     FaUserTie,
     FaCogs,
+    FaInfoCircle,
     FaSignOutAlt
 } from 'react-icons/fa';
 import { AuthContext } from '../context/AuthContext';
@@ -208,7 +209,12 @@ export default function Sidebar({ isCollapsedDesktop = false, onToggleDesktopCol
                         <Nav className="flex-column gap-1">
                             <Nav.Link as={NavLink} to="/configuracion" onClick={handleNavClick} className="sidebar-link rounded px-3 py-2 text-light d-flex align-items-center gap-3" title="Ajustes">
                                 <FaCogs className="fs-5 flex-shrink-0 text-secondary" />
-                                {!isCollapsed && <span className="text-truncate">Ajustes</span>}
+                                {!isCollapsed && <span className="text-truncate">Ajustes del Taller</span>}
+                            </Nav.Link>
+
+                            <Nav.Link as={NavLink} to="/version" onClick={handleNavClick} className="sidebar-link rounded px-3 py-2 text-light d-flex align-items-center gap-3" title="Versión y Sistema">
+                                <FaInfoCircle className="fs-5 flex-shrink-0 text-info" />
+                                {!isCollapsed && <span className="text-truncate">Versión y Sistema</span>}
                             </Nav.Link>
                         </Nav>
                     )}

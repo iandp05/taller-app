@@ -20,6 +20,7 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import PresupuestosPage from './pages/presupuestos/PresupuestosPage';
 import FacturasPage from './pages/facturas/FacturasPage';
 import ConfiguracionPage from './pages/configuracion/ConfiguracionPage';
+import VersionPage from './pages/version/VersionPage';
 
 // 1. Componente Guardián: Expulsa a los usuarios no identificados
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -67,6 +68,7 @@ function AppContent() {
                     <Route path="/presupuestos" element={<ProtectedRoute><PresupuestosPage /></ProtectedRoute>} />
                     <Route path="/facturas" element={<ProtectedRoute><FacturasPage /></ProtectedRoute>} />
                     <Route path="/configuracion" element={<ProtectedRoute><ConfiguracionPage /></ProtectedRoute>} />
+                    <Route path="/version" element={<ProtectedRoute><VersionPage /></ProtectedRoute>} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </div>

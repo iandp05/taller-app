@@ -355,14 +355,6 @@ export default function ConfiguracionPage() {
                     </Form>
                 </Card.Body>
             </Card>
-
-            {/* Ficha Informativa de Lectura Única con la Versión del Sistema */}
-            <Card className="shadow-sm border-0 mt-4 bg-light">
-                <Card.Body className="d-flex align-items-center justify-content-between p-3 select-none">
-                    <span className="text-secondary fw-bold">Versión de Software ERP Instalada:</span>
-                    <span className="badge bg-dark font-monospace fs-6 px-3 py-2">v1.0.1</span>
-                </Card.Body>
-            </Card>
         </div>
     );
 }
