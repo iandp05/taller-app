@@ -9,6 +9,20 @@ export const UpdateModal: React.FC = () => {
 
     useEffect(() => {
         let isMounted = true;
+
+        // La verificación de actualización se ejecuta EXCLUSIVAMENTE en la app de Escritorio TallerERP.exe / Desktop.
+        // La versión Web siempre corre la última versión del servidor y NUNCA debe mostrar este cartel.
+        const esEntornoDesktop = (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            (window as any).pywebview !== undefined ||
+            window.navigator.userAgent.includes('TallerERP')
+        );
+
+        if (!esEntornoDesktop) {
+            return;
+        }
+
         const verificar = async () => {
             try {
                 const res = await checkActualizaciones();
@@ -17,7 +31,7 @@ export const UpdateModal: React.FC = () => {
                     setShow(true);
                 }
             } catch (error) {
-                console.log("No se pudo verificar actualizaciones automáticamente:", error);
+                console.log("No se pudo verificar actualizaciones en escritorio:", error);
             }
         };
 
@@ -31,11 +45,14 @@ export const UpdateModal: React.FC = () => {
     }, []);
 
     const handleActualizarClick = () => {
-        if (infoUpdate?.download_url) {
-            window.open(infoUpdate.download_url, '_blank');
-        } else {
-            window.open('https://taller-backend-a7rb.onrender.com/', '_blank');
-        }
+        const downloadUrl = infoUpdate?.download_url || '/actualizaciones/descargar';
+        // Inicia la descarga directa del archivo ejecutable .exe
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `TallerERP_Setup_v${infoUpdate?.version_disponible || '1.0.1'}.exe`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
     if (!show || !infoUpdate) return null;
@@ -70,7 +87,7 @@ export const UpdateModal: React.FC = () => {
                 </div>
 
                 <p className="text-muted small mb-0">
-                    Se recomienda actualizar el sistema para mantener la compatibilidad con el servidor de sincronización y disponer de las últimas correcciones.
+                    Se recomienda descargar e instalar la actualización para contar con las últimas funciones y la sincronización con la nube.
                 </p>
             </Modal.Body>
             <Modal.Footer className="bg-light border-top-0 pt-0 pb-3 px-4">

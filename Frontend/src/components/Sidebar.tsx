@@ -6,6 +6,7 @@ import {
     FaBars,
     FaChevronDown,
     FaChevronRight,
+    FaChevronLeft,
     FaTachometerAlt,
     FaClipboardList,
     FaCalculator,
@@ -59,7 +60,7 @@ export default function Sidebar({ isCollapsedDesktop = false, onToggleDesktopCol
 
     const renderMenuBody = (isCollapsed: boolean) => (
         <div
-            className="d-flex flex-column h-100 bg-dark text-white p-2 p-md-3 shadow border-end border-secondary"
+            className="d-flex flex-column h-100 bg-dark text-white p-2 p-md-3 shadow border-end border-secondary no-scrollbar"
             style={{
                 width: isCollapsed ? '75px' : '250px',
                 minHeight: '100vh',
@@ -67,36 +68,46 @@ export default function Sidebar({ isCollapsedDesktop = false, onToggleDesktopCol
                 overflowX: 'hidden'
             }}
         >
-            {/* Cabecera / Marca y Botón Hamburguesa */}
+            {/* Cabecera / Marca Limpia */}
             <div className="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom border-secondary">
-                {!isCollapsed && (
-                    <Link to="/" onClick={handleNavClick} className="d-flex align-items-center gap-2 text-decoration-none text-white overflow-hidden">
-                        <img
-                            src={config.logo}
-                            alt={config.altLogo}
-                            style={{ height: '36px', width: 'auto', objectFit: 'contain' }}
-                        />
-                        <div className="text-truncate">
-                            <h6 className="fw-bold mb-0 text-white fs-6">{config.nombreComercial}</h6>
-                            <small className="text-secondary small d-block" style={{ fontSize: '0.7rem' }}>PATAGONIA</small>
-                        </div>
-                    </Link>
+                {!isCollapsed ? (
+                    <>
+                        <Link to="/" onClick={handleNavClick} className="d-flex align-items-center gap-2 text-decoration-none text-white overflow-hidden">
+                            <img
+                                src={config.logo}
+                                alt={config.altLogo}
+                                style={{ height: '36px', width: 'auto', objectFit: 'contain' }}
+                            />
+                            <div className="text-truncate">
+                                <h6 className="fw-bold mb-0 text-white fs-6">{config.nombreComercial}</h6>
+                                <small className="text-secondary small d-block" style={{ fontSize: '0.7rem' }}>PATAGONIA</small>
+                            </div>
+                        </Link>
+                        <Button
+                            variant="outline-secondary"
+                            size="sm"
+                            onClick={onToggleDesktopCollapse}
+                            title="Contraer menú"
+                            className="p-1 px-2 border-0 text-secondary ms-auto"
+                        >
+                            <FaChevronLeft className="fs-6" />
+                        </Button>
+                    </>
+                ) : (
+                    <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={onToggleDesktopCollapse}
+                        title="Expandir menú"
+                        className="p-1 px-2 border-0 text-light mx-auto"
+                    >
+                        <FaBars className="fs-5" />
+                    </Button>
                 )}
-
-                {/* Botón Hamburguesa para Colapsar/Expandir */}
-                <Button
-                    variant="outline-secondary"
-                    size="sm"
-                    onClick={onToggleDesktopCollapse}
-                    title={isCollapsed ? "Expandir menú" : "Contraer menú"}
-                    className="p-1 px-2 border-0 text-light ms-auto"
-                >
-                    <FaBars className="fs-5" />
-                </Button>
             </div>
 
-            {/* Navegación Principal Dividida en 3 Secciones */}
-            <div className="flex-grow-1 overflow-y-auto pe-1">
+            {/* Navegación Principal Dividida en 3 Secciones sin scrollbars feas */}
+            <div className="flex-grow-1 overflow-y-auto no-scrollbar pe-1">
 
                 {/* SECCIÓN 1: GESTIÓN OPERATIVA */}
                 <div className="mb-3">

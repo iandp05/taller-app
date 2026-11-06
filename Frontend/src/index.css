@@ -7,6 +7,15 @@ body {
   overflow-x: hidden;
 }
 
+/* Ocultar barras de scroll horribles manteniendo el desplazamiento táctil/rueda */
+.no-scrollbar {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE 10+ */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important; /* Safari y Chrome */
+}
+
 /* Contenedor principal para PC y Monitores Anchos (Evita que el contenido se estire excesivamente) */
 .app-main-container {
   max-width: 1280px;
